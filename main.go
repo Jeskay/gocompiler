@@ -13,11 +13,10 @@ func main() {
 	}
 	lexerInstance := lexer.NewLexer(file)
 	for {
-		pos, tok, lit := lexerInstance.Lex()
+		pos, tok, lex, lit := lexerInstance.Lex()
 		if tok == lexer.EOF {
 			break
 		}
-
-		fmt.Printf("%d:%d\t%s\t%s\n", pos.Line, pos.Column, tok, lit)
+		fmt.Printf("%d:%d\t%s\t%s\t%s\n", pos.Line, pos.Column, tok, lex, lit)
 	}
 }

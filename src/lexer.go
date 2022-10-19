@@ -13,6 +13,10 @@ const (
 	ILLEGAL
 	IDENT
 	INT
+	FLOAT
+	IMAG
+	CHAR
+	STRING
 	SEMI
 
 	ADD
@@ -58,52 +62,52 @@ func NewLexer(reader io.Reader) *Lexer {
 	}
 }
 
-func (l *Lexer) Lex() (Position, Token, string) {
+func (l *Lexer) Lex() (Position, Token, string, string) {
 	for {
 		r, _, err := l.reader.ReadRune()
 		if err != nil {
 			if err == io.EOF {
-				return l.position, EOF, ""
+				return l.position, EOF, "", ""
 			}
 			panic(err)
 		}
 		l.position.Column++
 		switch r {
 		case '\n':
-			l.resetPosition()
+			l.nextLine()
 		case ';':
-			return l.position, SEMI, ";"
+			return l.position, SEMI, ";", string(r)
 		case '+':
-			return l.position, ADD, "+"
+			return l.position, ADD, "+", string(r)
 		case '-':
-			return l.position, SUB, "-"
+			return l.position, SUB, "-", string(r)
 		case '*':
-			return l.position, MUL, "*"
+			return l.position, MUL, "*", string(r)
 		case '/':
-			return l.position, DIV, "/"
+			return l.position, DIV, "/", string(r)
 		case '=':
-			return l.position, ASSIGN, "="
+			return l.position, ASSIGN, "=", string(r)
 		default:
 			if unicode.IsSpace(r) {
 				continue
 			} else if unicode.IsDigit(r) {
 				startPos := l.position
 				l.backup()
-				lit := l.lexInt()
-				return startPos, INT, lit
+				lex, lit := l.lexInt()
+				return startPos, INT, lex, lit
 			} else if unicode.IsLetter(r) {
 				startPos := l.position
 				l.backup()
-				lit := l.lexIdent()
-				return startPos, IDENT, lit
+				lex := l.lexIdent()
+				return startPos, IDENT, lex, lex
 			} else {
-				return l.position, ILLEGAL, string(r)
+				return l.position, ILLEGAL, string(r), string(r)
 			}
 		}
 	}
 }
 
-func (l *Lexer) resetPosition() {
+func (l *Lexer) nextLine() {
 	l.position.Line++
 	l.position.Column = 0
 }
@@ -115,21 +119,33 @@ func (l *Lexer) backup() {
 	l.position.Column--
 }
 
-func (l *Lexer) lexInt() string {
-	var literal string
-	for {
+func (l *Lexer) lexInt() (string, string) {
+	var lexem, base int64 = 0, 10
+	var literal string = ""
+	var i int64
+	for i = 0;;i *= base {
 		r, _, err := l.reader.ReadRune()
 		if err != nil {
 			if err == io.EOF {
-				return literal
+				return string(lexem), literal
 			}
 		}
 		l.position.Column++
-		if unicode.IsDigit(r) {
+		if literal == "0" && r == 'x' {
+			base = 16
 			literal += string(r)
+		} else if base == 16 && IsHex(r) {
+			literal += string(r)
+			lexem += RuneToInt(r) * i
+		} else if IsDigit(r) {
+			literal += string(r)
+			lexem += int64(r - '0') * i
 		} else {
+			if base == 16 {
+				l.backup()
+			}
 			l.backup()
-			return literal
+			return string(lexem), literal
 		}
 	}
 }
@@ -144,11 +160,32 @@ func (l *Lexer) lexIdent() string {
 			}
 		}
 		l.position.Column++
-		if unicode.IsLetter(r) {
+		if IsLetter(r) {
 			literal += string(r)
 		} else {
 			l.backup()
 			return literal
 		}
 	}
+}
+func RuneToInt(r rune) int64 {
+	if IsDigit(r) {
+		return int64(r - '0')
+	} else if (r >= 'a' && r <= 'e') {
+		return 10 + int64(r - 'a')
+	} else if (r >= 'A' && r <= 'F') {
+		return 10 + int64(r - 'A')
+	} 
+	panic("invalid hexadeciamal digit")
+}
+func IsDigit(r rune) bool {
+	return r >= '0' && r <= '9'
+}
+
+func IsHex(r rune) bool {
+	return IsDigit(r) || (r >= 'a' && r <= 'e') || (r >= 'A' && r <= 'E')
+}
+
+func IsLetter(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 }
