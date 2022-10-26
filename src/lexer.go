@@ -53,25 +53,27 @@ type Position struct {
 type Lexer struct {
 	position Position
 	reader   *bufio.Reader
+	buffer   *Buffer
 }
 
 func NewLexer(reader io.Reader) *Lexer {
 	return &Lexer{
 		position: Position{Line: 1, Column: 0},
 		reader:   bufio.NewReader(reader),
+		buffer:   NewBuffer(5),
 	}
 }
 
 func (l *Lexer) Lex() (Position, Token, string, string) {
 	for {
-		r, _, err := l.reader.ReadRune()
+		err := l.readNext()
+		r := l.buffer.GetCurrent()
 		if err != nil {
 			if err == io.EOF {
 				return l.position, EOF, "", ""
 			}
 			panic(err)
 		}
-		l.position.Column++
 		switch r {
 		case '\n':
 			l.nextLine()
@@ -113,39 +115,54 @@ func (l *Lexer) nextLine() {
 }
 
 func (l *Lexer) backup() {
-	if err := l.reader.UnreadRune(); err != nil {
-		panic(err)
+	if !l.buffer.isEmpty {
+		l.buffer.position--
 	}
 	l.position.Column--
+}
+
+func (l *Lexer) readNext() error {
+	if l.buffer.position+1 < len(l.buffer.buf) {
+		l.buffer.position++
+		l.position.Column++
+		return nil
+	}
+	r, _, err := l.reader.ReadRune()
+	if err != nil {
+		return err
+	}
+	l.position.Column++
+	l.buffer.Push(r)
+	return nil
 }
 
 func (l *Lexer) lexInt() (string, string) {
 	var lexem, base int64 = 0, 10
 	var literal string = ""
-	var i int64
-	for i = 0;;i *= base {
-		r, _, err := l.reader.ReadRune()
+	for {
+		err := l.readNext()
+		r := l.buffer.GetCurrent()
 		if err != nil {
 			if err == io.EOF {
-				return string(lexem), literal
+				return intToString(lexem), literal
 			}
 		}
-		l.position.Column++
 		if literal == "0" && r == 'x' {
 			base = 16
 			literal += string(r)
 		} else if base == 16 && IsHex(r) {
 			literal += string(r)
-			lexem += RuneToInt(r) * i
+			lexem = RuneToInt(r) + lexem*base
 		} else if IsDigit(r) {
 			literal += string(r)
-			lexem += int64(r - '0') * i
+			lexem = int64(r-'0') + lexem*base
 		} else {
-			if base == 16 {
+			if literal == "0x" {
+				literal = "0"
 				l.backup()
 			}
 			l.backup()
-			return string(lexem), literal
+			return intToString(lexem), literal
 		}
 	}
 }
@@ -153,13 +170,13 @@ func (l *Lexer) lexInt() (string, string) {
 func (l *Lexer) lexIdent() string {
 	var literal string
 	for {
-		r, _, err := l.reader.ReadRune()
+		err := l.readNext()
+		r := l.buffer.GetCurrent()
 		if err != nil {
 			if err == io.EOF {
 				return literal
 			}
 		}
-		l.position.Column++
 		if IsLetter(r) {
 			literal += string(r)
 		} else {
@@ -171,13 +188,30 @@ func (l *Lexer) lexIdent() string {
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {
 		return int64(r - '0')
-	} else if (r >= 'a' && r <= 'e') {
-		return 10 + int64(r - 'a')
-	} else if (r >= 'A' && r <= 'F') {
-		return 10 + int64(r - 'A')
-	} 
+	} else if r >= 'a' && r <= 'e' {
+		return 10 + int64(r-'a')
+	} else if r >= 'A' && r <= 'F' {
+		return 10 + int64(r-'A')
+	}
 	panic("invalid hexadeciamal digit")
 }
+
+// reversed
+func intToString(num int64) string {
+	result := ""
+	if num == 0 {
+		return "0"
+	}
+	for {
+		if num == 0 {
+			break
+		}
+		result = string(rune('0'+(num%10))) + result
+		num = num / 10
+	}
+	return result
+}
+
 func IsDigit(r rune) bool {
 	return r >= '0' && r <= '9'
 }
