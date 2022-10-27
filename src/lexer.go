@@ -31,7 +31,9 @@ var tokens = []string{
 	ILLEGAL: "ILLEGAL",
 	IDENT:   "IDENT",
 	INT:     "INT",
+	CHAR:    "CHAR",
 	SEMI:    "SEMI",
+	STRING:  "STRING",
 
 	ADD: "+",
 	SUB: "-",
@@ -89,6 +91,11 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 			return l.position, DIV, "/", string(r)
 		case '=':
 			return l.position, ASSIGN, "=", string(r)
+		case '\'':
+			startPos := l.position
+			l.backup()
+			token, lex, lit := l.lexChar()
+			return startPos, token, lex, lit
 		default:
 			if unicode.IsSpace(r) {
 				continue
@@ -185,6 +192,41 @@ func (l *Lexer) lexIdent() string {
 		}
 	}
 }
+
+func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
+	lexem, literal = "", ""
+	for {
+		err := l.readNext()
+		r := l.buffer.GetCurrent()
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+		}
+		if IsLetter(r) && len(lexem) == 0 {
+			lexem = string(r)
+			literal += lexem
+			continue
+		}
+		if r == '\'' {
+			literal += string(r)
+			if lexem != "" {
+				token = CHAR
+				return
+			}
+		} else {
+			if len(lexem) > 0 {
+				literal = literal[:1]
+				lexem = literal
+				l.backup()
+			}
+			l.backup()
+			token = ILLEGAL
+			return
+		}
+	}
+
+}
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {
 		return int64(r - '0')
@@ -196,7 +238,6 @@ func RuneToInt(r rune) int64 {
 	panic("invalid hexadeciamal digit")
 }
 
-// reversed
 func intToString(num int64) string {
 	result := ""
 	if num == 0 {
