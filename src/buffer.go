@@ -14,7 +14,7 @@ func NewBuffer(size int) *Buffer {
 		size:     size,
 		isFull:   false,
 		isEmpty:  true,
-		position: -1,
+		position: 0,
 	}
 }
 
@@ -25,8 +25,6 @@ func (b *Buffer) Push(r rune) {
 	b.buf = append(b.buf, r)
 	if len(b.buf) == b.size {
 		b.isFull = true
-	} else {
-		b.position++
 	}
 	b.isEmpty = false
 }
@@ -53,4 +51,7 @@ func (b *Buffer) IsFull() bool {
 
 func (b *Buffer) IsEmpty() bool {
 	return b.isEmpty
+}
+func (b *Buffer) CurrentAtHead() bool {
+	return (b.position + 1) >= len(b.buf)
 }

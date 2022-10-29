@@ -68,8 +68,7 @@ func NewLexer(reader io.Reader) *Lexer {
 
 func (l *Lexer) Lex() (Position, Token, string, string) {
 	for {
-		err := l.readNext()
-		r := l.buffer.GetCurrent()
+		r, err := l.readNext()
 		if err != nil {
 			if err == io.EOF {
 				return l.position, EOF, "", ""
@@ -128,41 +127,57 @@ func (l *Lexer) backup() {
 	l.position.Column--
 }
 
-func (l *Lexer) readNext() error {
-	if l.buffer.position+1 < len(l.buffer.buf) {
+func (l *Lexer) readNext() (symbol rune, err error) {
+	if !l.buffer.CurrentAtHead() {
 		l.buffer.position++
 		l.position.Column++
-		return nil
+		return l.buffer.GetCurrent(), nil
 	}
 	r, _, err := l.reader.ReadRune()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	l.position.Column++
 	l.buffer.Push(r)
-	return nil
+	symbol = l.buffer.GetCurrent()
+	if !l.buffer.IsFull() {
+		l.buffer.position++
+	}
+	return
 }
 
 func (l *Lexer) lexInt() (string, string) {
 	var lexem, base int64 = 0, 10
 	var literal string = ""
 	for {
-		err := l.readNext()
-		r := l.buffer.GetCurrent()
+		r, err := l.readNext()
 		if err != nil {
 			if err == io.EOF {
 				return intToString(lexem), literal
 			}
 		}
-		if literal == "0" && r == 'x' {
-			base = 16
-			literal += string(r)
-		} else if base == 16 && IsHex(r) {
+
+		if literal == "0" {
+			switch r {
+			case 'x', 'X':
+				base = 16
+				literal += string(r)
+				continue
+			case 'o', 'O':
+				base = 8
+				literal += string(r)
+				continue
+			case 'b', 'B':
+				base = 2
+				literal += string(r)
+				continue
+			default:
+				base = 8
+			}
+		}
+		if RuneInBase(base, r) {
 			literal += string(r)
 			lexem = RuneToInt(r) + lexem*base
-		} else if IsDigit(r) {
-			literal += string(r)
-			lexem = int64(r-'0') + lexem*base
 		} else {
 			if literal == "0x" {
 				literal = "0"
@@ -177,8 +192,7 @@ func (l *Lexer) lexInt() (string, string) {
 func (l *Lexer) lexIdent() string {
 	var literal string
 	for {
-		err := l.readNext()
-		r := l.buffer.GetCurrent()
+		r, err := l.readNext()
 		if err != nil {
 			if err == io.EOF {
 				return literal
@@ -196,8 +210,7 @@ func (l *Lexer) lexIdent() string {
 func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	lexem, literal = "", ""
 	for {
-		err := l.readNext()
-		r := l.buffer.GetCurrent()
+		r, err := l.readNext()
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -253,6 +266,10 @@ func intToString(num int64) string {
 	return result
 }
 
+func RuneInBase(base int64, r rune) bool {
+	return (base == 2 && IsBinary(r)) || (base == 8 && IsOctal(r)) || (base == 10 && IsDigit(r)) || (base == 16 && IsHex(r))
+}
+
 func IsDigit(r rune) bool {
 	return r >= '0' && r <= '9'
 }
@@ -263,4 +280,12 @@ func IsHex(r rune) bool {
 
 func IsLetter(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+}
+
+func IsBinary(r rune) bool {
+	return r == '0' || r == '1'
+}
+
+func IsOctal(r rune) bool {
+	return r >= '0' && r <= '7'
 }
