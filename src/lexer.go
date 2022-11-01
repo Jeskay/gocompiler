@@ -11,6 +11,7 @@ type Token int
 const (
 	EOF = iota
 	ILLEGAL
+	COMMENT
 	IDENT
 	INT
 	FLOAT
@@ -29,6 +30,7 @@ const (
 var tokens = []string{
 	EOF:     "EOF",
 	ILLEGAL: "ILLEGAL",
+	COMMENT: "COMMENT",
 	IDENT:   "IDENT",
 	INT:     "INT",
 	CHAR:    "CHAR",
@@ -87,7 +89,10 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 		case '*':
 			return l.position, MUL, "*", string(r)
 		case '/':
-			return l.position, DIV, "/", string(r)
+			startPos := l.position
+			l.backup()
+			token, lex, lit := l.lexComment()
+			return startPos, token, lex, lit
 		case '=':
 			return l.position, ASSIGN, "=", string(r)
 		case '\'':
@@ -139,10 +144,10 @@ func (l *Lexer) readNext() (symbol rune, err error) {
 	}
 	l.position.Column++
 	l.buffer.Push(r)
-	symbol = l.buffer.GetCurrent()
-	if !l.buffer.IsFull() {
+	if !l.buffer.CurrentAtHead() {
 		l.buffer.position++
 	}
+	symbol = l.buffer.GetCurrent()
 	return
 }
 
@@ -204,6 +209,45 @@ func (l *Lexer) lexIdent() string {
 			l.backup()
 			return literal
 		}
+	}
+}
+
+func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
+	comment := ""
+	lexem, literal = "", ""
+	for {
+		r, err := l.readNext()
+		if err != nil {
+			if err == io.EOF {
+				if literal == "/" {
+					token = DIV
+				}
+				return
+			}
+		}
+		if literal == "/" && (r == '/' || r == '*') {
+			comment = literal + string(r)
+			token = COMMENT
+			lexem = ""
+			literal += string(r)
+			continue
+		} else if literal == "/" {
+			token = DIV
+			l.backup()
+			return
+		}
+		if r == '\n' && comment == "//" {
+			token = COMMENT
+			l.backup()
+			return
+		} else if r == '/' && len(literal) > 0 && literal[len(literal)-1] == '*' && comment == "/*" {
+			literal += string(r)
+			lexem = lexem[:len(lexem)-1]
+			token = COMMENT
+			return
+		}
+		literal += string(r)
+		lexem += string(r)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	lexer "gocompiler/src"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -17,6 +18,6 @@ func main() {
 		if tok == lexer.EOF {
 			break
 		}
-		fmt.Printf("%d:%d\t%s\t%s\t%s\n", pos.Line, pos.Column, tok, lex, lit)
+		fmt.Printf("%d:%d\t%s\t%s\t%s\n", pos.Line, pos.Column, tok, strings.ReplaceAll(lex, "\r", ""), strings.ReplaceAll(lit, "\r", ""))
 	}
 }

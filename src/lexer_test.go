@@ -71,3 +71,30 @@ func TestIdents(t *testing.T) {
 		}
 	}
 }
+
+func TestComment(t *testing.T) {
+	expected := [...]lexem{
+		{Position{1, 1}, INT, "1", "1"},
+		{Position{1, 3}, DIV, "/", "/"},
+		{Position{1, 5}, INT, "2", "2"},
+		{Position{2, 1}, COMMENT, "комментарий 1", "//комментарий 1"},
+		{Position{3, 1}, COMMENT, " 1 + 5 / 10", "// 1 + 5 / 10"},
+		{Position{4, 1}, COMMENT, "comment 1", "/*comment 1*/"},
+		{Position{5, 1}, COMMENT, "/sdfsdf", "///sdfsdf"},
+		{Position{6, 1}, COMMENT, "1t\n2t\n3t", "/*1t\n2t\n3t*/"},
+		{Position{7, 1}, IDENT, "end", "end"},
+		{Position{8, 1}, COMMENT, "comment with no ending quote", "/*comment with no ending quote"},
+	}
+	const input = "1 / 2\n//комментарий 1\n// 1 + 5 / 10\n/*comment 1*/\n///sdfsdf\n/*1t\n2t\n3t*/\nend\n/*comment with no ending quote"
+	lexerInstance := NewLexer(strings.NewReader(input))
+	for i := 0; ; i++ {
+		pos, tok, lex, lit := lexerInstance.Lex()
+		if tok == EOF {
+			break
+		}
+		got := lexem{pos, tok, lex, lit}
+		if !got.Compare(expected[i]) {
+			t.Errorf("expected %s, got %s", expected[i].ToString(), got.ToString())
+		}
+	}
+}
