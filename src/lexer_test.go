@@ -45,3 +45,25 @@ func TestDigits(t *testing.T) {
 	}
 
 }
+func TestChar(t *testing.T) {
+	expected := [...]lexem{
+		{Position{1, 1}, CHAR, "a", "'a'"},
+		{Position{1, 5}, CHAR, "ä", "'ä'"},
+		{Position{1, 9}, CHAR, "本", "'本'"},
+		{Position{1, 13}, ILLEGAL, "'", "'"},
+		{Position{1, 14}, IDENT, "aa", "aa"},
+		{Position{1, 16}, CHAR, " ", "' '"},
+	}
+	const input = "'a' 'ä' '本' 'aa' '"
+	lexerInstance := NewLexer(strings.NewReader(input))
+	for i := 0; ; i++ {
+		pos, tok, lex, lit := lexerInstance.Lex()
+		if tok == EOF {
+			break
+		}
+		got := lexem{pos, tok, lex, lit}
+		if !got.Compare(expected[i]) {
+			t.Errorf("expected %s, got %s", expected[i].ToString(), got.ToString())
+		}
+	}
+}
