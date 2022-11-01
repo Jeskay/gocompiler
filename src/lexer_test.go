@@ -75,7 +75,7 @@ func TestIdents(t *testing.T) {
 func TestComment(t *testing.T) {
 	expected := [...]lexem{
 		{Position{1, 1}, INT, "1", "1"},
-		{Position{1, 3}, DIV, "/", "/"},
+		{Position{1, 3}, QUO, "/", "/"},
 		{Position{1, 5}, INT, "2", "2"},
 		{Position{2, 1}, COMMENT, "комментарий 1", "//комментарий 1"},
 		{Position{3, 1}, COMMENT, " 1 + 5 / 10", "// 1 + 5 / 10"},

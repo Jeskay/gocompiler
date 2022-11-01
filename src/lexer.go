@@ -6,49 +6,6 @@ import (
 	"unicode"
 )
 
-type Token int
-
-const (
-	EOF = iota
-	ILLEGAL
-	COMMENT
-	IDENT
-	INT
-	FLOAT
-	IMAG
-	CHAR
-	STRING
-	SEMI
-
-	ADD
-	SUB
-	MUL
-	DIV
-	ASSIGN
-)
-
-var tokens = []string{
-	EOF:     "EOF",
-	ILLEGAL: "ILLEGAL",
-	COMMENT: "COMMENT",
-	IDENT:   "IDENT",
-	INT:     "INT",
-	CHAR:    "CHAR",
-	SEMI:    "SEMI",
-	STRING:  "STRING",
-
-	ADD: "+",
-	SUB: "-",
-	MUL: "*",
-	DIV: "/",
-
-	ASSIGN: "=",
-}
-
-func (t Token) String() string {
-	return tokens[t]
-}
-
 type Position struct {
 	Line   int
 	Column int
@@ -81,7 +38,7 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 		case '\n':
 			l.nextLine()
 		case ';':
-			return l.position, SEMI, ";", string(r)
+			return l.position, SEMICOLON, ";", string(r)
 		case '+':
 			return l.position, ADD, "+", string(r)
 		case '-':
@@ -220,7 +177,7 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 		if err != nil {
 			if err == io.EOF {
 				if literal == "/" {
-					token = DIV
+					token = QUO
 				}
 				return
 			}
@@ -232,7 +189,7 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 			literal += string(r)
 			continue
 		} else if literal == "/" {
-			token = DIV
+			token = QUO
 			l.backup()
 			return
 		}
