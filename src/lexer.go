@@ -103,7 +103,7 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 				l.backup()
 				lex, lit := l.lexInt()
 				return startPos, INT, lex, lit
-			} else if unicode.IsLetter(r) {
+			} else if IsLetter(r) {
 				startPos := l.position
 				l.backup()
 				lex := l.lexIdent()
@@ -209,6 +209,7 @@ func (l *Lexer) lexIdent() string {
 
 func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	lexem, literal = "", ""
+	var rune_representation, base, digit_amount, count int64 = -1, 0, -1, 0
 	for {
 		r, err := l.readNext()
 		if err != nil {
@@ -216,17 +217,51 @@ func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 				return
 			}
 		}
-		if IsLetter(r) && len(lexem) == 0 {
-			lexem = string(r)
-			literal += lexem
+		if r == '\\' {
+			base = 8
+			digit_amount = 3 //8^3
+			literal += string(r)
+			continue
+		}
+		if literal == "'\\" {
+			switch r {
+			case 'x', 'X':
+				literal += string(r)
+				base = 16
+				digit_amount = 4 //16^4
+				continue
+			case 'u', 'U':
+				literal += string(r)
+				base = 16
+				digit_amount = 8 //16^8
+				continue
+			case 'a', 'b', 'f', 'n', 'r', 't', 'v', '\\', '\'':
+				lexem = string(r)
+				literal += lexem
+				continue
+			}
+		}
+		if RuneInBase(base, r) && count < digit_amount {
+			if rune_representation == -1 {
+				rune_representation = 0
+			}
+			rune_representation = RuneToInt(r) + rune_representation*base
+			literal += string(r)
+			count++
 			continue
 		}
 		if r == '\'' {
 			literal += string(r)
-			if lexem != "" {
+			if lexem != "" || rune_representation >= 0 {
+				if base != 0 {
+					lexem = string(rune(rune_representation))
+				}
 				token = CHAR
 				return
 			}
+		} else if len(lexem) == 0 {
+			lexem = string(r)
+			literal += lexem
 		} else {
 			if len(lexem) > 0 {
 				literal = literal[:1]
@@ -243,7 +278,7 @@ func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {
 		return int64(r - '0')
-	} else if r >= 'a' && r <= 'e' {
+	} else if r >= 'a' && r <= 'f' {
 		return 10 + int64(r-'a')
 	} else if r >= 'A' && r <= 'F' {
 		return 10 + int64(r-'A')
@@ -275,7 +310,7 @@ func IsDigit(r rune) bool {
 }
 
 func IsHex(r rune) bool {
-	return IsDigit(r) || (r >= 'a' && r <= 'e') || (r >= 'A' && r <= 'E')
+	return IsDigit(r) || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
 }
 
 func IsLetter(r rune) bool {
