@@ -29,29 +29,65 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			if err == io.EOF {
-				return l.position, EOF, "", ""
-			}
-			panic(err)
+			return l.position, EOF, "", ""
 		}
 		switch r {
 		case '\n':
 			l.nextLine()
+		case '(':
+			return l.position, RPAREN, "(", string(r)
+		case ')':
+			return l.position, LPAREN, ")", string(r)
+		case '[':
+			return l.position, RBRACK, "[", string(r)
+		case ']':
+			return l.position, LBRACK, "]", string(r)
+		case '{':
+			return l.position, RBRACE, "{", string(r)
+		case '}':
+			return l.position, LBRACE, "}", string(r)
+		case ',':
+			return l.position, COMMA, ",", string(r)
+		case '.':
+			startPos := l.position
+			token, lex, lit := l.lexEllipsis()
+			return startPos, token, lex, lit
+		case ':':
+			startPos := l.position
+			r2, err := l.readNext()
+			if err == nil && r2 == '=' {
+				return startPos, DEFINE, ":=", ":="
+			}
+			return startPos, COLON, ":", string(r)
 		case ';':
 			return l.position, SEMICOLON, ";", string(r)
 		case '+':
-			return l.position, ADD, "+", string(r)
+			startPos := l.position
+			token, lex, lit := l.lexPlus()
+			return startPos, token, lex, lit
 		case '-':
-			return l.position, SUB, "-", string(r)
+			startPos := l.position
+			token, lex, lit := l.lexMinus()
+			return startPos, token, lex, lit
 		case '*':
-			return l.position, MUL, "*", string(r)
+			startPos := l.position
+			r2, err := l.readNext()
+			if err == nil && r2 == '=' {
+				return startPos, MUL_ASSIGN, "*=", "*="
+			}
+			return startPos, MUL, "*", string(r)
 		case '/':
 			startPos := l.position
 			l.backup()
 			token, lex, lit := l.lexComment()
 			return startPos, token, lex, lit
 		case '=':
-			return l.position, ASSIGN, "=", string(r)
+			startPos := l.position
+			r2, err := l.readNext()
+			if err == nil && r2 == '=' {
+				return startPos, EQL, "==", "=="
+			}
+			return startPos, ASSIGN, "=", string(r)
 		case '\'':
 			startPos := l.position
 			l.backup()
@@ -97,7 +133,11 @@ func (l *Lexer) readNext() (symbol rune, err error) {
 	}
 	r, _, err := l.reader.ReadRune()
 	if err != nil {
-		return 0, err
+		if err == io.EOF {
+			return 0, err
+		} else {
+			panic(err)
+		}
 	}
 	l.position.Column++
 	l.buffer.Push(r)
@@ -114,9 +154,7 @@ func (l *Lexer) lexInt() (string, string) {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			if err == io.EOF {
-				return intToString(lexem), literal
-			}
+			return intToString(lexem), literal
 		}
 
 		if literal == "0" {
@@ -156,9 +194,7 @@ func (l *Lexer) lexIdent() string {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			if err == io.EOF {
-				return literal
-			}
+			return literal
 		}
 		if IsLetter(r) || (len(literal) > 0 && IsDigit(r)) {
 			literal += string(r)
@@ -175,12 +211,10 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			if err == io.EOF {
-				if literal == "/" {
-					token = QUO
-				}
-				return
+			if literal == "/" {
+				token = QUO
 			}
+			return
 		}
 		if literal == "/" && (r == '/' || r == '*') {
 			comment = literal + string(r)
@@ -188,6 +222,8 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 			lexem = ""
 			literal += string(r)
 			continue
+		} else if r == '=' {
+			return QUO_ASSIGN, "/=", "/="
 		} else if literal == "/" {
 			token = QUO
 			l.backup()
@@ -208,14 +244,65 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 	}
 }
 
+func (l *Lexer) lexPlus() (Token, string, string) {
+	r, err := l.readNext()
+	if err != nil {
+		return ADD, "+", "+"
+	}
+	if r == '+' {
+		return INC, "++", "++"
+	}
+	if r == '=' {
+		return ADD_ASSIGN, "+=", "+="
+	}
+	l.backup()
+	return ADD, "+", "+"
+}
+
+func (l *Lexer) lexMinus() (Token, string, string) {
+	r, err := l.readNext()
+	if err != nil {
+		return SUB, "-", "-"
+	}
+	if r == '-' {
+		return DEC, "--", "--"
+	}
+	if r == '=' {
+		return SUB_ASSIGN, "-=", "-="
+	}
+	l.backup()
+	return SUB, "-", "-"
+}
+
+func (l *Lexer) lexEllipsis() (Token, string, string) {
+	count := 1
+	for {
+		r, err := l.readNext()
+		if err != nil {
+			break
+		}
+		if r == '.' {
+			count++
+		} else {
+			if count > 1 {
+				l.backup()
+			}
+			l.backup()
+			break
+		}
+		if count == 3 {
+			return ELLIPSIS, "...", "..."
+		}
+	}
+	return PERIOD, ".", "."
+}
+
 func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	lexem, literal = "", ""
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			if err == io.EOF {
-				return
-			}
+			return
 		}
 		if IsLetter(r) && len(lexem) == 0 {
 			lexem = string(r)
