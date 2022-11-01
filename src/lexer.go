@@ -98,12 +98,12 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 		default:
 			if unicode.IsSpace(r) {
 				continue
-			} else if unicode.IsDigit(r) {
+			} else if IsDigit(r) {
 				startPos := l.position
 				l.backup()
 				lex, lit := l.lexInt()
 				return startPos, INT, lex, lit
-			} else if unicode.IsLetter(r) {
+			} else if IsLetter(r) {
 				startPos := l.position
 				l.backup()
 				lex := l.lexIdent()
@@ -198,7 +198,7 @@ func (l *Lexer) lexIdent() string {
 				return literal
 			}
 		}
-		if IsLetter(r) {
+		if IsLetter(r) || (len(literal) > 0 && IsDigit(r)) {
 			literal += string(r)
 		} else {
 			l.backup()
@@ -279,7 +279,7 @@ func IsHex(r rune) bool {
 }
 
 func IsLetter(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+	return unicode.IsLetter(r) || r == '_'
 }
 
 func IsBinary(r rune) bool {

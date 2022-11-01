@@ -45,3 +45,29 @@ func TestDigits(t *testing.T) {
 	}
 
 }
+func TestIdents(t *testing.T) {
+	expected := [...]lexem{
+		{Position{1, 1}, IDENT, "test", "test"},
+		{Position{2, 1}, INT, "2", "2"},
+		{Position{2, 2}, IDENT, "test", "test"},
+		{Position{3, 1}, IDENT, "test2", "test2"},
+		{Position{4, 1}, IDENT, "Test2", "Test2"},
+		{Position{5, 1}, IDENT, "TEST", "TEST"},
+		{Position{6, 1}, IDENT, "_test2", "_test2"},
+		{Position{7, 1}, IDENT, "_2test", "_2test"},
+		{Position{8, 1}, IDENT, "___", "___"},
+		{Position{9, 2}, IDENT, "αβ", "αβ"},
+	}
+	const input = "test \n2test \ntest2 \nTest2 \nTEST \n_test2 \n_2test \n___ \n αβ"
+	lexerInstance := NewLexer(strings.NewReader(input))
+	for i := 0; ; i++ {
+		pos, tok, lex, lit := lexerInstance.Lex()
+		if tok == EOF {
+			break
+		}
+		got := lexem{pos, tok, lex, lit}
+		if !got.Compare(expected[i]) {
+			t.Errorf("expected %s, got %s", expected[i].ToString(), got.ToString())
+		}
+	}
+}
