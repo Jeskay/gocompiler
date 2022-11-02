@@ -35,22 +35,50 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 		case '\n':
 			l.nextLine()
 		case '(':
-			return l.position, RPAREN, "(", string(r)
+			return l.position, LPAREN, "(", string(r)
 		case ')':
-			return l.position, LPAREN, ")", string(r)
+			return l.position, RPAREN, ")", string(r)
 		case '[':
-			return l.position, RBRACK, "[", string(r)
+			return l.position, LBRACK, "[", string(r)
 		case ']':
-			return l.position, LBRACK, "]", string(r)
+			return l.position, RBRACK, "]", string(r)
 		case '{':
-			return l.position, RBRACE, "{", string(r)
+			return l.position, LBRACE, "{", string(r)
 		case '}':
-			return l.position, LBRACE, "}", string(r)
+			return l.position, RBRACE, "}", string(r)
 		case ',':
 			return l.position, COMMA, ",", string(r)
+		case '&':
+			startPos := l.position
+			token, lex, lit := l.lexAmpersand()
+			return startPos, token, lex, lit
+		case '|':
+			startPos := l.position
+			token, lex, lit := l.lexColon()
+			return startPos, token, lex, lit
+		case '^':
+			startPos := l.position
+			token, lex, lit := l.lexXor()
+			return startPos, token, lex, lit
+		case '%':
+			startPos := l.position
+			token, lex, lit := l.lexRem()
+			return startPos, token, lex, lit
+		case '!':
+			startPos := l.position
+			token, lex, lit := l.lexNot()
+			return startPos, token, lex, lit
 		case '.':
 			startPos := l.position
 			token, lex, lit := l.lexEllipsis()
+			return startPos, token, lex, lit
+		case '>':
+			startPos := l.position
+			token, lex, lit := l.lexArrowR()
+			return startPos, token, lex, lit
+		case '<':
+			startPos := l.position
+			token, lex, lit := l.lexArrowL()
 			return startPos, token, lex, lit
 		case ':':
 			startPos := l.position
@@ -295,6 +323,103 @@ func (l *Lexer) lexEllipsis() (Token, string, string) {
 		}
 	}
 	return PERIOD, ".", "."
+}
+
+func (l *Lexer) lexAmpersand() (Token, string, string) {
+	r, err := l.readNext()
+	if err != nil {
+		return AND, "&", "&"
+	}
+	if r == '&' {
+		return LAND, "&&", "&&"
+	}
+	if r == '=' {
+		return AND_ASSIGN, "&=", "&="
+	}
+	if r == '^' {
+		r, err = l.readNext()
+		if err == nil && r == '=' {
+			return AND_NOT_ASSIGN, "&^=", "&^="
+		}
+		l.backup()
+		return AND_NOT, "&^", "&^"
+	}
+	l.backup()
+	return AND, "&", "&"
+}
+
+func (l *Lexer) lexColon() (Token, string, string) {
+	r, err := l.readNext()
+	if err != nil {
+		return OR, "|", "|"
+	}
+	if r == '|' {
+		return LOR, "||", "||"
+	}
+	if r == '=' {
+		return OR_ASSIGN, "|=", "|="
+	}
+	return OR, "|", "|"
+}
+
+func (l *Lexer) lexXor() (Token, string, string) {
+	r, err := l.readNext()
+	if err == nil && r == '=' {
+		return XOR_ASSIGN, "^=", "^="
+	}
+	return XOR, "^", "^"
+}
+
+func (l *Lexer) lexRem() (Token, string, string) {
+	r, err := l.readNext()
+	if err == nil && r == '=' {
+		return REM_ASSIGN, "%=", "%="
+	}
+	return REM, "%", "%"
+}
+
+func (l *Lexer) lexNot() (Token, string, string) {
+	r, err := l.readNext()
+	if err == nil && r == '=' {
+		return NEQ, "!=", "!="
+	}
+	return NOT, "!", "!"
+}
+
+func (l *Lexer) lexArrowR() (Token, string, string) {
+	r, err := l.readNext()
+	if err != nil {
+		return GTR, ">", ">"
+	}
+	if r == '>' {
+		r, err = l.readNext()
+		if err == nil && r == '=' {
+			return SHR_ASSIGN, ">>=", ">>="
+		}
+		return SHR, ">>", ">>"
+	} else if r == '=' {
+		return GEQ, ">=", ">="
+	}
+	return GTR, ">", ">"
+}
+
+func (l *Lexer) lexArrowL() (Token, string, string) {
+	r, err := l.readNext()
+	if err != nil {
+		return LSS, "<", "<"
+	}
+	if r == '<' {
+		r, err = l.readNext()
+		if err == nil && r == '=' {
+			return SHL_ASSIGN, "<<=", "<<="
+		}
+		return SHL, "<<", "<<"
+	} else if r == '-' {
+		return ARROW, "<-", "<-"
+	} else if r == '=' {
+		return LEQ, "<=", "<="
+	}
+	return LSS, "<", "<"
 }
 
 func (l *Lexer) lexChar() (token Token, lexem string, literal string) {

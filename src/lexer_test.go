@@ -98,3 +98,67 @@ func TestComment(t *testing.T) {
 		}
 	}
 }
+
+func TestOperands(t *testing.T) {
+	expected := [...]lexem{
+		{Position{1, 1}, ADD, "+", "+"},
+		{Position{1, 6}, AND, "&", "&"},
+		{Position{1, 12}, ADD_ASSIGN, "+=", "+="},
+		{Position{1, 18}, AND_ASSIGN, "&=", "&="},
+		{Position{1, 25}, LAND, "&&", "&&"},
+		{Position{1, 31}, EQL, "==", "=="},
+		{Position{1, 37}, NEQ, "!=", "!="},
+		{Position{1, 43}, LPAREN, "(", "("},
+		{Position{1, 48}, RPAREN, ")", ")"},
+		{Position{2, 1}, SUB, "-", "-"},
+		{Position{2, 6}, OR, "|", "|"},
+		{Position{2, 12}, SUB_ASSIGN, "-=", "-="},
+		{Position{2, 18}, OR_ASSIGN, "|=", "|="},
+		{Position{2, 25}, LOR, "||", "||"},
+		{Position{2, 31}, LSS, "<", "<"},
+		{Position{2, 37}, LEQ, "<=", "<="},
+		{Position{2, 43}, LBRACK, "[", "["},
+		{Position{2, 48}, RBRACK, "]", "]"},
+		{Position{3, 1}, MUL, "*", "*"},
+		{Position{3, 6}, XOR, "^", "^"},
+		{Position{3, 12}, MUL_ASSIGN, "*=", "*="},
+		{Position{3, 18}, XOR_ASSIGN, "^=", "^="},
+		{Position{3, 25}, ARROW, "<-", "<-"},
+		{Position{3, 31}, GTR, ">", ">"},
+		{Position{3, 37}, GEQ, ">=", ">="},
+		{Position{3, 43}, LBRACE, "{", "{"},
+		{Position{3, 48}, RBRACE, "}", "}"},
+		{Position{4, 1}, QUO, "/", "/"},
+		{Position{4, 6}, SHL, "<<", "<<"},
+		{Position{4, 12}, QUO_ASSIGN, "/=", "/="},
+		{Position{4, 18}, SHL_ASSIGN, "<<=", "<<="},
+		{Position{4, 25}, INC, "++", "++"},
+		{Position{4, 31}, ASSIGN, "=", "="},
+		{Position{4, 37}, DEFINE, ":=", ":="},
+		{Position{4, 43}, COMMA, ",", ","},
+		{Position{4, 48}, SEMICOLON, ";", ";"},
+		{Position{5, 1}, REM, "%", "%"},
+		{Position{5, 6}, SHR, ">>", ">>"},
+		{Position{5, 12}, REM_ASSIGN, "%=", "%="},
+		{Position{5, 18}, SHR_ASSIGN, ">>=", ">>="},
+		{Position{5, 25}, DEC, "--", "--"},
+		{Position{5, 31}, NOT, "!", "!"},
+		{Position{5, 37}, ELLIPSIS, "...", "..."},
+		{Position{5, 43}, PERIOD, ".", "."},
+		{Position{5, 48}, COLON, ":", ":"},
+		{Position{6, 6}, AND_NOT, "&^", "&^"},
+		{Position{6, 18}, AND_NOT_ASSIGN, "&^=", "&^="},
+	}
+	const input = "+    &     +=    &=     &&    ==    !=    (    )\n-    |     -=    |=     ||    <     <=    [    ]\n*    ^     *=    ^=     <-    >     >=    {    }\n/    <<    /=    <<=    ++    =     :=    ,    ;\n%    >>    %=    >>=    --    !     ...   .    : \n     &^          &^= "
+	lexerInstance := NewLexer(strings.NewReader(input))
+	for i := 0; ; i++ {
+		pos, tok, lex, lit := lexerInstance.Lex()
+		if tok == EOF {
+			break
+		}
+		got := lexem{pos, tok, lex, lit}
+		if !got.Compare(expected[i]) {
+			t.Errorf("expected %s, got %s", expected[i].ToString(), got.ToString())
+		}
+	}
+}
