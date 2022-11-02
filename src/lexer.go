@@ -18,6 +18,7 @@ type Lexer struct {
 }
 
 func NewLexer(reader io.Reader) *Lexer {
+	initKeywords()
 	return &Lexer{
 		position: Position{Line: 1, Column: 0},
 		reader:   bufio.NewReader(reader),
@@ -133,6 +134,10 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 				startPos := l.position
 				l.backup()
 				lex := l.lexIdent()
+				keyword, ok := keywords[lex]
+				if ok {
+					return startPos, keyword, lex, lex
+				}
 				return startPos, IDENT, lex, lex
 			} else {
 				return l.position, ILLEGAL, string(r), string(r)
