@@ -189,7 +189,9 @@ func (l *Lexer) lexInt() (string, string) {
 		if err != nil {
 			return intToString(lexem), literal
 		}
-
+		if literal == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
+			panic("_ must separate successive digits")
+		}
 		if literal == "0" {
 			switch r {
 			case 'x', 'X':
@@ -207,6 +209,10 @@ func (l *Lexer) lexInt() (string, string) {
 			default:
 				base = 8
 			}
+		}
+		if r == '_' {
+			literal += string(r)
+			continue
 		}
 		if RuneInBase(base, r) {
 			literal += string(r)
@@ -461,7 +467,7 @@ func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {
 		return int64(r - '0')
-	} else if r >= 'a' && r <= 'e' {
+	} else if r >= 'a' && r <= 'f' {
 		return 10 + int64(r-'a')
 	} else if r >= 'A' && r <= 'F' {
 		return 10 + int64(r-'A')
@@ -493,7 +499,7 @@ func IsDigit(r rune) bool {
 }
 
 func IsHex(r rune) bool {
-	return IsDigit(r) || (r >= 'a' && r <= 'e') || (r >= 'A' && r <= 'E')
+	return IsDigit(r) || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
 }
 
 func IsLetter(r rune) bool {

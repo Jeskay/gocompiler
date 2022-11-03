@@ -19,7 +19,7 @@ func (l *lexem) Compare(l2 lexem) bool {
 func (l *lexem) ToString() string {
 	return fmt.Sprintf("%d:%d\t%s\t%s\t%s\n", l.pos.Line, l.pos.Column, l.tok, l.lex, l.lit)
 }
-func TestDigits(t *testing.T) {
+func TestIntDigits(t *testing.T) {
 	expected := [...]lexem{
 		{Position{1, 1}, INT, "1910", "1910"},
 		{Position{2, 1}, INT, "0", "0"},
@@ -30,8 +30,11 @@ func TestDigits(t *testing.T) {
 		{Position{7, 1}, INT, "282", "0O0432"},
 		{Position{8, 1}, INT, "427", "0x01AB"},
 		{Position{9, 1}, INT, "171", "0Xab"},
+		{Position{10, 1}, INT, "384", "0_600"},
+		{Position{11, 1}, INT, "195951310", "0xBadFace"},
+		{Position{12, 1}, INT, "195951310", "0xBad_Face"},
 	}
-	const input = "1910 \n0 \n0b100 \n0b00111 \n0777 \n0o1234 \n0O0432 \n0x01AB \n0Xab"
+	const input = "1910 \n0 \n0b100 \n0b00111 \n0777 \n0o1234 \n0O0432 \n0x01AB \n0Xab \n0_600 \n0xBadFace \n0xBad_Face"
 	lexerInstance := NewLexer(strings.NewReader(input))
 	for i := 0; ; i++ {
 		pos, tok, lex, lit := lexerInstance.Lex()
