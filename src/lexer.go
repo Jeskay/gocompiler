@@ -3,6 +3,7 @@ package lexer
 import (
 	"bufio"
 	"io"
+	"strconv"
 	"unicode"
 )
 
@@ -128,8 +129,8 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 			} else if IsDigit(r) {
 				startPos := l.position
 				l.backup()
-				lex, lit := l.lexInt()
-				return startPos, INT, lex, lit
+				token, lex, lit := l.lexInt()
+				return startPos, token, lex, lit
 			} else if IsLetter(r) {
 				startPos := l.position
 				l.backup()
@@ -181,13 +182,14 @@ func (l *Lexer) readNext() (symbol rune, err error) {
 	return
 }
 
-func (l *Lexer) lexInt() (string, string) {
-	var lexem, base int64 = 0, 10
+func (l *Lexer) lexInt() (Token, string, string) {
+	var lexem, base, additional_lexem int64 = 0, 10, 0
 	var literal string = ""
+	uncertainBase := false
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			return intToString(lexem), literal
+			return INT, intToString(lexem), literal
 		}
 		if literal == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
 			panic("_ must separate successive digits")
@@ -208,24 +210,89 @@ func (l *Lexer) lexInt() (string, string) {
 				continue
 			default:
 				base = 8
+				uncertainBase = true
 			}
 		}
 		if r == '_' {
 			literal += string(r)
 			continue
 		}
+		if (r == '.' || r == 'p' || r == 'P') && (base == 10 || base == 16 || uncertainBase) || ((r == 'e' || r == 'E') && (base == 10 || uncertainBase)) {
+			literal += string(r)
+			if r == 'p' || r == 'P' || r == 'e' || r == 'E' {
+				l.backup()
+			}
+			if uncertainBase {
+				return l.lexFloat(10, additional_lexem, literal)
+			} else {
+				return l.lexFloat(base, lexem, literal)
+			}
+		}
 		if RuneInBase(base, r) {
 			literal += string(r)
+			if uncertainBase {
+				additional_lexem = RuneToInt(r) + additional_lexem*10
+			}
 			lexem = RuneToInt(r) + lexem*base
+			if lexem > 2147483647 {
+				panic("int overflow")
+			}
 		} else {
 			if literal == "0x" {
 				literal = "0"
 				l.backup()
 			}
 			l.backup()
-			return intToString(lexem), literal
+			return INT, intToString(lexem), literal
 		}
 	}
+}
+func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string, string) {
+	var quotient float64 = float64(lexem)
+	var i, expBase, mantissa int64 = 1, 1, 0
+	var mantissaSign int64 = 1
+
+	for {
+		r, err := l.readNext()
+		if err != nil {
+			break
+		}
+		if (r == 'p' || r == 'P') && base == 16 {
+			i = 1
+			base = 10
+			expBase = 2
+			literal += string(r)
+			continue
+		} else if (r == 'e' || r == 'E') && base == 10 {
+			i = 1
+			expBase = 10
+			literal += string(r)
+			continue
+		} else if literal[len(literal)-1] == 'p' || literal[len(literal)-1] == 'e' || literal[len(literal)-1] == 'E' || literal[len(literal)-1] == 'P' {
+			if r == '-' {
+				mantissaSign = -1
+				literal += string(r)
+				continue
+			}
+			if r == '+' {
+				literal += string(r)
+				continue
+			}
+		}
+
+		if expBase != 1 && RuneInBase(10, r) {
+			mantissa = RuneToInt(r) + mantissa*i
+			i *= base
+		} else if RuneInBase(base, r) {
+			i *= base
+			quotient += float64(RuneToInt(r)) / float64(i)
+		} else {
+			l.backup()
+			break
+		}
+		literal += string(r)
+	}
+	return FLOAT, floatToString(quotient * pow(expBase, mantissa*mantissaSign)), literal
 }
 
 func (l *Lexer) lexIdent() string {
@@ -486,6 +553,23 @@ func intToString(num int64) string {
 		}
 		result = string(rune('0'+(num%10))) + result
 		num = num / 10
+	}
+	return result
+}
+func floatToString(num float64) string {
+	return strconv.FormatFloat(num, 'f', -1, 64)
+}
+func pow(base int64, degree int64) (result float64) {
+	var i int64
+	result = 1
+	if degree > 0 {
+		for i = 0; i < degree; i++ {
+			result *= float64(base)
+		}
+	} else {
+		for i = 0; i > degree; i-- {
+			result /= float64(base)
+		}
 	}
 	return result
 }
