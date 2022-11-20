@@ -72,7 +72,7 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 			return startPos, token, lex, lit
 		case '.':
 			startPos := l.position
-			token, lex, lit := l.lexEllipsis()
+			token, lex, lit := l.lexFloat(10, 0, ".")
 			return startPos, token, lex, lit
 		case '>':
 			startPos := l.position
@@ -218,9 +218,10 @@ func (l *Lexer) lexInt() (Token, string, string) {
 			continue
 		}
 		if (r == '.' || r == 'p' || r == 'P') && (base == 10 || base == 16 || uncertainBase) || ((r == 'e' || r == 'E') && (base == 10 || uncertainBase)) {
-			literal += string(r)
 			if r == 'p' || r == 'P' || r == 'e' || r == 'E' {
 				l.backup()
+			} else {
+				literal += string(r)
 			}
 			if uncertainBase {
 				return l.lexFloat(10, additional_lexem, literal)
@@ -248,8 +249,7 @@ func (l *Lexer) lexInt() (Token, string, string) {
 	}
 }
 func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string, string) {
-	var quotient float64 = float64(lexem)
-	var i, expBase, mantissa int64 = 1, 1, 0
+	var i, k, expBase, mantissa int64 = 1, 1, 1, 0
 	var mantissaSign int64 = 1
 
 	for {
@@ -258,12 +258,22 @@ func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string
 			break
 		}
 		if (r == 'p' || r == 'P') && base == 16 {
+			if literal[len(literal)-1] == '_' {
+				l.backup()
+				l.backup()
+				break
+			}
 			i = 1
 			base = 10
 			expBase = 2
 			literal += string(r)
 			continue
 		} else if (r == 'e' || r == 'E') && base == 10 {
+			if literal[len(literal)-1] == '_' {
+				l.backup()
+				l.backup()
+				break
+			}
 			i = 1
 			expBase = 10
 			literal += string(r)
@@ -278,21 +288,33 @@ func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string
 				literal += string(r)
 				continue
 			}
+			if r == '_' {
+				l.backup()
+				break
+			}
 		}
-
+		if r == '_' {
+			literal += string(r)
+			continue
+		}
 		if expBase != 1 && RuneInBase(10, r) {
 			mantissa = RuneToInt(r) + mantissa*i
 			i *= base
 		} else if RuneInBase(base, r) {
 			i *= base
-			quotient += float64(RuneToInt(r)) / float64(i)
+			k *= base
+			lexem = RuneToInt(r) + lexem*base
+		} else if literal == "." {
+			l.backup()
+			return l.lexEllipsis()
 		} else {
 			l.backup()
 			break
 		}
 		literal += string(r)
 	}
-	return FLOAT, floatToString(quotient * pow(expBase, mantissa*mantissaSign)), literal
+	result := float64(lexem) / float64(k)
+	return FLOAT, floatToString(result * pow(expBase, mantissa*mantissaSign)), literal
 }
 
 func (l *Lexer) lexIdent() string {
@@ -322,18 +344,20 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 			}
 			return
 		}
-		if literal == "/" && (r == '/' || r == '*') {
-			comment = literal + string(r)
-			token = COMMENT
-			lexem = ""
-			literal += string(r)
-			continue
-		} else if r == '=' {
-			return QUO_ASSIGN, "/=", "/="
-		} else if literal == "/" {
-			token = QUO
-			l.backup()
-			return
+		if literal == "/" {
+			if r == '/' || r == '*' {
+				comment = literal + string(r)
+				token = COMMENT
+				lexem = ""
+				literal += string(r)
+				continue
+			} else if r == '=' {
+				return QUO_ASSIGN, "/=", "/="
+			} else if literal == "/" {
+				token = QUO
+				l.backup()
+				return
+			}
 		}
 		if r == '\n' && comment == "//" {
 			token = COMMENT
@@ -562,16 +586,20 @@ func floatToString(num float64) string {
 func pow(base int64, degree int64) (result float64) {
 	var i int64
 	result = 1
-	if degree > 0 {
-		for i = 0; i < degree; i++ {
-			result *= float64(base)
-		}
-	} else {
-		for i = 0; i > degree; i-- {
-			result /= float64(base)
-		}
+	for i = 0; i < abs(degree); i++ {
+		result *= float64(base)
 	}
-	return result
+	if degree > 0 {
+		return result
+	} else {
+		return 1 / result
+	}
+}
+func abs(num int64) int64 {
+	if num > 0 {
+		return num
+	}
+	return -num
 }
 
 func RuneInBase(base int64, r rune) bool {
