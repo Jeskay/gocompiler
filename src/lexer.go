@@ -308,6 +308,10 @@ func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string
 			l.backup()
 			return l.lexEllipsis()
 		} else {
+			if literal[len(literal)-1] == '+' || literal[len(literal)-1] == '-' {
+				literal = literal[:len(literal)-1]
+				l.backup()
+			}
 			l.backup()
 			break
 		}
