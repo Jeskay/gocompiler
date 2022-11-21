@@ -232,6 +232,10 @@ func (l *Lexer) lexInt() (Token, string, string) {
 				return l.lexFloat(base, lexem, literal)
 			}
 		}
+		if r == 'i' {
+			literal += string(r)
+			return IMAG, intToString(lexem) + "i", literal
+		}
 		if RuneInBase(base, r) {
 			literal += string(r)
 			if uncertainBase {
@@ -299,6 +303,11 @@ func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string
 		if r == '_' {
 			literal += string(r)
 			continue
+		}
+		if r == 'i' {
+			literal += string(r)
+			result := float64(lexem) / float64(k)
+			return IMAG, floatToString(result*pow(expBase, mantissa*mantissaSign)) + "i", literal
 		}
 		if expBase != 1 && RuneInBase(10, r) {
 			mantissa = RuneToInt(r) + mantissa*i

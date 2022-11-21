@@ -109,6 +109,7 @@ var tokens = []string{
 	COMMENT: "COMMENT",
 	IDENT:   "IDENT",
 	INT:     "INT",
+	IMAG:    "IMAG",
 	FLOAT:   "FLOAT",
 	CHAR:    "CHAR",
 	STRING:  "STRING",
