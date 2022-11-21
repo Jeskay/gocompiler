@@ -208,3 +208,33 @@ func TestStringFormats(t *testing.T) {
 	const input = `"日本語" "\u65e5\u672c\u8a9e" "\U000065e5\U0000672c\U00008a9e"`
 	performTest(t, input, expected[:])
 }
+
+func TestHelloWorld(t *testing.T) {
+	expected := []lexem{
+		{Position{1, 1}, PACKAGE, "package", "package"},
+		{Position{1, 9}, IDENT, "hello", "hello"},
+		{Position{3, 1}, IMPORT, "import", "import"},
+		{Position{3, 8}, LPAREN, "(", "("},
+		{Position{4, 5}, STRING, "fmt", `"fmt"`},
+		{Position{5, 1}, RPAREN, ")", ")"},
+		{Position{6, 1}, COMMENT, "\nsimple programm that greets you!\naccepts nothing\n", "/*\nsimple programm that greets you!\naccepts nothing\n*/"},
+		{Position{7, 1}, FUNC, "func", "func"},
+		{Position{7, 6}, IDENT, "main", "main"},
+		{Position{7, 10}, LPAREN, "(", "("},
+		{Position{7, 11}, RPAREN, ")", ")"},
+		{Position{7, 13}, LBRACE, "{", "{"},
+		{Position{8, 5}, CONST, "const", "const"},
+		{Position{8, 11}, IDENT, "message", "message"},
+		{Position{8, 19}, ASSIGN, "=", "="},
+		{Position{8, 21}, STRING, "Hello world!\nend of the message", "`Hello world!\nend of the message`"},
+		{Position{9, 5}, IDENT, "fmt", "fmt"},
+		{Position{9, 8}, PERIOD, ".", "."},
+		{Position{9, 9}, IDENT, "Printf", "Printf"},
+		{Position{9, 15}, LPAREN, "(", "("},
+		{Position{9, 16}, IDENT, "message", "message"},
+		{Position{9, 23}, RPAREN, ")", ")"},
+		{Position{10, 1}, RBRACE, "}", "}"},
+	}
+	const input = "package hello\n\nimport (\n    \"fmt\"\n)\n/*\nsimple programm that greets you!\naccepts nothing\n*/\nfunc main() {\n    const message = `Hello world!\nend of the message`\n    fmt.Printf(message)\n}"
+	performTest(t, input, expected[:])
+}
