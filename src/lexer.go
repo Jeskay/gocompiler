@@ -120,6 +120,7 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 			return startPos, ASSIGN, "=", string(r)
 		case '\'':
 			startPos := l.position
+			l.backup()
 			token, lex, lit := l.lexChar()
 			return startPos, token, lex, lit
 		default:
@@ -527,84 +528,36 @@ func (l *Lexer) lexArrowL() (Token, string, string) {
 	return LSS, "<", "<"
 }
 
-func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
+func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	lexem, literal = "", ""
-	byte_base, byte_limit := 0, 1
-	for i := 0; i < byte_limit; i++ {
+	for {
 		r, err := l.readNext()
 		if err != nil {
 			return
 		}
-		if byte_base == 8 {
-			if r == 'u' {
-				literal += string(r)
-				byte_base = 16
-				byte_limit = 4
-				i = 0
-				continue
-			} else if r == 'U' {
-				literal += string(r)
-				byte_base = 16
-				byte_limit = 8
-				i = 0
-				continue
-			} else if r == 'x' {
-				literal += string(r)
-				byte_base = 16
-				byte_limit = 2
-				i = 0
-				continue
-			}
-			val, ok := isEscapedChar(r)
-			if ok {
-				literal += string(r)
-				lexem = string(val)
-				return
-			}
-			if IsOctal(r) {
-				lexem += string(r)
-				literal += string(r)
-				continue
-			}
-			l.backup()
-			return
-		}
-		if byte_base > 0 {
-			if RuneInBase(int64(byte_base), r) {
-				lexem += string(r)
-				literal += string(r)
-				continue
-			}
-			l.backup()
-			return
-
-		} else if r == '\\' {
-			literal += string(r)
-			byte_base = 8
-			byte_limit = 3
-			i = 0
+		if IsLetter(r) && len(lexem) == 0 {
+			lexem = string(r)
+			literal += lexem
 			continue
 		}
-		lexem += string(r)
+		if r == '\'' {
+			literal += string(r)
+			if lexem != "" {
+				token = CHAR
+				return
+			}
+		} else {
+			if len(lexem) > 0 {
+				literal = literal[:1]
+				lexem = literal
+				l.backup()
+			}
+			l.backup()
+			token = ILLEGAL
+			return
+		}
 	}
-	return
-}
 
-func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
-	lexem, literal = l.lexCharSymbol()
-	literal = "'" + literal
-	r, err := l.readNext()
-	if err != nil {
-		return
-	}
-	if r == '\'' {
-		literal += string(r)
-		return CHAR, lexem, literal
-	}
-	for i := 0; i < len(literal)-1; i++ {
-		l.backup()
-	}
-	return ILLEGAL, "'", "'"
 }
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {
@@ -675,10 +628,4 @@ func IsBinary(r rune) bool {
 
 func IsOctal(r rune) bool {
 	return r >= '0' && r <= '7'
-}
-
-func isEscapedChar(r rune) (rune, bool) {
-	var chars = map[rune]rune{'a': '\a', 'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r', 't': '\t', 'v': '\v', '\\': '\\', '\'': '\'', '"': '"'}
-	symbol, ok := chars[r]
-	return symbol, ok
 }
