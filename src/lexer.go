@@ -568,7 +568,7 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 			if ok {
 				literal += string(r)
 				lexem = string(val)
-				byte_code = 0
+				byte_base = 0
 				i = 0
 				break
 			}
@@ -599,6 +599,7 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 			continue
 		}
 		lexem += string(r)
+		literal += string(r)
 	}
 	if byte_base > 0 {
 		if byte_base == 8 && (byte_code < 0 || byte_code > 255) {

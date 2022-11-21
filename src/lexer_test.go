@@ -165,3 +165,46 @@ func TestOperands(t *testing.T) {
 	const input = "+    &     +=    &=     &&    ==    !=    (    )\n-    |     -=    |=     ||    <     <=    [    ]\n*    ^     *=    ^=     <-    >     >=    {    }\n/    <<    /=    <<=    ++    =     :=    ,    ;\n%    >>    %=    >>=    --    !     ...   .    : \n     &^          &^= "
 	performTest(t, input, expected[:])
 }
+
+func TestChar(t *testing.T) {
+	expected := [...]lexem{
+		{Position{1, 1}, CHAR, "a", "'a'"},
+		{Position{2, 1}, CHAR, "ä", "'ä'"},
+		{Position{3, 1}, CHAR, "本", "'本'"},
+		{Position{4, 1}, CHAR, "\t", "'\t'"},
+		{Position{5, 1}, CHAR, "\u12e4", "'\u12e4'"},
+		{Position{6, 1}, CHAR, "\U00101234", "'\U00101234'"},
+	}
+	const input = "'a' \n'ä' \n'本' \n'\t' \n'\u12e4' \n'\U00101234'"
+	performTest(t, input, expected[:])
+}
+
+func TestString(t *testing.T) {
+	expected := [...]lexem{
+		{Position{1, 1}, STRING, "abc", "`abc`"},
+		{Position{2, 1}, STRING, "\n\n\n", "`\\n\n\\n`"},
+		{Position{3, 1}, STRING, "\n", "\"\\n\""},
+		{Position{4, 1}, STRING, `"`, `"\""`},
+		{Position{5, 1}, STRING, "Hello, world!\n", `"Hello, world!\n"`},
+		{Position{6, 1}, STRING, `日本語`, `"日本語"`},
+	}
+	const input = "`abc` \n`\\n\n\\n` \n\"\\n\" \n\"\\\"\" \n\"Hello, world!\\n\" \n\"日本語\""
+	performTest(t, input, expected[:])
+	expected2 := [...]lexem{
+		{Position{1, 1}, STRING, "日本語", `"\u65e5本\U00008a9e"`},
+		{Position{2, 2}, STRING, "ÿÿ", `"\xff\u00FF"`},
+	}
+	const input2 = `"\u65e5本\U00008a9e"
+	"\xff\u00FF"`
+	performTest(t, input2, expected2[:])
+}
+
+func TestStringFormats(t *testing.T) {
+	expected := [...]lexem{
+		{Position{1, 1}, STRING, "日本語", `"日本語"`},
+		{Position{1, 7}, STRING, "日本語", `"\u65e5\u672c\u8a9e"`},
+		{Position{1, 28}, STRING, "日本語", `"\U000065e5\U0000672c\U00008a9e"`},
+	}
+	const input = `"日本語" "\u65e5\u672c\u8a9e" "\U000065e5\U0000672c\U00008a9e"`
+	performTest(t, input, expected[:])
+}
