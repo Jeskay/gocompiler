@@ -23,7 +23,7 @@ func NewLexer(reader io.Reader) *Lexer {
 	return &Lexer{
 		position: Position{Line: 1, Column: 0},
 		reader:   bufio.NewReader(reader),
-		buffer:   NewBuffer(5),
+		buffer:   NewBuffer(10),
 	}
 }
 
