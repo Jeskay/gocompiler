@@ -82,6 +82,10 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 			startPos := l.position
 			token, lex, lit := l.lexArrowL()
 			return startPos, token, lex, lit
+		case '"', '`':
+			startPos := l.position
+			token, lex, lit := l.lexString(r == '`')
+			return startPos, token, lex, lit
 		case ':':
 			startPos := l.position
 			r2, err := l.readNext()
@@ -536,6 +540,10 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 		if err != nil {
 			return
 		}
+		if r == '\n' {
+			l.backup()
+			return "", ""
+		}
 		if byte_base == 8 {
 			if r == 'u' {
 				literal += string(r)
@@ -560,6 +568,8 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 			if ok {
 				literal += string(r)
 				lexem = string(val)
+				byte_code = 0
+				i = 0
 				break
 			}
 			if IsOctal(r) {
@@ -611,14 +621,45 @@ func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	if err != nil {
 		return
 	}
-	if r == '\'' {
+	if r == '\'' && len(lexem) > 0 {
 		literal += string(r)
 		return CHAR, lexem, literal
 	}
 	for i := 0; i < len(literal)-1; i++ {
 		l.backup()
 	}
-	return ILLEGAL, "too many characters", ""
+	return ILLEGAL, "rune literal not terminated", ""
+}
+
+func (l *Lexer) lexString(isRaw bool) (token Token, lexem string, literal string) {
+	for {
+		r, err := l.readNext()
+		if err != nil {
+			return
+		}
+		if (isRaw && r == '`') || (!isRaw && r == '"') {
+			literal += string(r)
+			break
+		}
+		if r == '\n' {
+			if isRaw {
+				literal += string(r)
+				lexem += string(r)
+				continue
+			}
+			return ILLEGAL, "illegal: string literal not terminated", ""
+		}
+		l.backup()
+		char_lexem, char_literal := l.lexCharSymbol()
+		lexem += char_lexem
+		literal += char_literal
+	}
+	if isRaw {
+		literal = "`" + literal
+	} else {
+		literal = "\"" + literal
+	}
+	return STRING, lexem, literal
 }
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {
