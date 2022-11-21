@@ -19,5 +19,8 @@ func main() {
 			break
 		}
 		fmt.Printf("%d:%d\t%s\t%s\t%s\n", pos.Line, pos.Column, tok, strings.ReplaceAll(lex, "\r", ""), strings.ReplaceAll(lit, "\r", ""))
+		if tok == lexer.ILLEGAL {
+			break
+		}
 	}
 }

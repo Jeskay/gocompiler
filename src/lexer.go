@@ -529,8 +529,9 @@ func (l *Lexer) lexArrowL() (Token, string, string) {
 
 func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 	lexem, literal = "", ""
-	byte_base, byte_limit := 0, 1
-	for i := 0; i < byte_limit; i++ {
+	var i int
+	byte_base, byte_limit, byte_code := 0, 1, 0
+	for i = 1; i <= byte_limit; i++ {
 		r, err := l.readNext()
 		if err != nil {
 			return
@@ -559,24 +560,26 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 			if ok {
 				literal += string(r)
 				lexem = string(val)
-				return
+				break
 			}
 			if IsOctal(r) {
 				lexem += string(r)
 				literal += string(r)
+				byte_code = int(RuneToInt(r)) + byte_code*byte_base
 				continue
 			}
 			l.backup()
-			return
+			break
 		}
 		if byte_base > 0 {
 			if RuneInBase(int64(byte_base), r) {
 				lexem += string(r)
 				literal += string(r)
+				byte_code = int(RuneToInt(r)) + byte_code*byte_base
 				continue
 			}
 			l.backup()
-			return
+			break
 
 		} else if r == '\\' {
 			literal += string(r)
@@ -586,6 +589,17 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 			continue
 		}
 		lexem += string(r)
+	}
+	if byte_base > 0 {
+		if byte_base == 8 && (byte_code < 0 || byte_code > 255) {
+			panic("illegal: octal value over 255")
+		}
+		if byte_base == 16 && (byte_code > 0x10FFFF || (byte_code > 0xD800 && byte_code < 0xDFFF)) {
+			panic("illegal: surrogate half")
+		}
+		lexem = string(rune(byte_code))
+	} else if i > 2 {
+		panic("illegal: too many characters")
 	}
 	return
 }
@@ -604,7 +618,7 @@ func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	for i := 0; i < len(literal)-1; i++ {
 		l.backup()
 	}
-	return ILLEGAL, "'", "'"
+	return ILLEGAL, "too many characters", ""
 }
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {
