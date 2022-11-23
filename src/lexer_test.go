@@ -30,6 +30,9 @@ func performTest(t *testing.T, input string, expect []lexem) {
 		if !got.Compare(expect[i]) {
 			t.Errorf("expected %s, got %s", expect[i].ToString(), got.ToString())
 		}
+		if tok == ILLEGAL {
+			break
+		}
 	}
 }
 func TestIntDigits(t *testing.T) {
@@ -49,6 +52,8 @@ func TestIntDigits(t *testing.T) {
 	}
 	const input = "1910 \n0 \n0b100 \n0b00111 \n0777 \n0o1234 \n0O0432 \n0x01AB \n0Xab \n0_600 \n0xBadFace \n0xBad_Face"
 	performTest(t, input, expected[:])
+	performTest(t, "2147483649", []lexem{{Position{1, 1}, ILLEGAL, "illegal: integer value overflow", ""}})
+	performTest(t, "0_xBadFace", []lexem{{Position{1, 1}, ILLEGAL, "illegal: _ must separate successive digits", ""}})
 }
 
 func TestFloatDigits(t *testing.T) {
@@ -77,6 +82,8 @@ func TestFloatDigits(t *testing.T) {
 	}
 	const input = "0.15e+0_2 \n0x2.p10 \n2.71828 \n0000. \n072.40 \n0x1.Fp+0 \n1.e+0 \n6.67428e-11 \n1E6 \n.25 \n.12345E+5 \n1_5. \n0.15e+0_2  \n0x1p-2 \n0x2.p10 \n0x1.Fp+0 \n0X.8p-0 \n0X_1FFFP-16 \n0x15e-2"
 	performTest(t, input, expected[:])
+	performTest(t, "1p-2", []lexem{{Position{1, 1}, ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""}})
+	performTest(t, "0x1.5e-2", []lexem{{Position{1, 1}, ILLEGAL, "illegal: hexadecimal mantissa requires p exponent", ""}})
 }
 func TestIdents(t *testing.T) {
 	expected := [...]lexem{
@@ -177,6 +184,8 @@ func TestChar(t *testing.T) {
 	}
 	const input = "'a' \n'ä' \n'本' \n'\t' \n'\u12e4' \n'\U00101234'"
 	performTest(t, input, expected[:])
+	performTest(t, "'aa'", []lexem{{Position{1, 1}, ILLEGAL, "illegal: rune literal not terminated", ""}})
+	performTest(t, "1p-2", []lexem{{Position{1, 1}, ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""}})
 }
 
 func TestString(t *testing.T) {
@@ -197,6 +206,8 @@ func TestString(t *testing.T) {
 	const input2 = `"\u65e5本\U00008a9e"
 	"\xff\u00FF"`
 	performTest(t, input2, expected2[:])
+	performTest(t, `"\uD800"`, []lexem{{Position{1, 1}, ILLEGAL, "illegal: invalid Unicode code point", ""}})
+	performTest(t, `"\U00110000"`, []lexem{{Position{1, 1}, ILLEGAL, "illegal: invalid Unicode code point", ""}})
 }
 
 func TestStringFormats(t *testing.T) {

@@ -195,7 +195,7 @@ func (l *Lexer) lexInt() (Token, string, string) {
 			return INT, intToString(lexem), literal
 		}
 		if literal == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
-			panic("_ must separate successive digits")
+			return ILLEGAL, "illegal: _ must separate successive digits", ""
 		}
 		if literal == "0" {
 			switch r {
@@ -264,7 +264,10 @@ func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string
 		if err != nil {
 			break
 		}
-		if (r == 'p' || r == 'P') && base == 16 {
+		if (r == 'p' || r == 'P') && expBase == 1 && lexem != 0 {
+			if base != 16 {
+				return ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
+			}
 			if literal[len(literal)-1] == '_' {
 				l.backup()
 				l.backup()
@@ -275,7 +278,10 @@ func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string
 			expBase = 2
 			literal += string(r)
 			continue
-		} else if (r == 'e' || r == 'E') && base == 10 {
+		} else if (r == 'e' || r == 'E') && expBase == 1 && lexem != 0 {
+			if base == 16 {
+				return ILLEGAL, "illegal: hexadecimal mantissa requires p exponent", ""
+			}
 			if literal[len(literal)-1] == '_' {
 				l.backup()
 				l.backup()
@@ -540,7 +546,7 @@ func (l *Lexer) lexArrowL() (Token, string, string) {
 	return LSS, "<", "<"
 }
 
-func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
+func (l *Lexer) lexCharSymbol() (lexem string, literal string, error string) {
 	lexem, literal = "", ""
 	var i int
 	byte_base, byte_limit, byte_code := 0, 1, 0
@@ -551,7 +557,7 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 		}
 		if r == '\n' {
 			l.backup()
-			return "", ""
+			return "", "", ""
 		}
 		if byte_base == 8 {
 			if r == 'u' {
@@ -612,20 +618,23 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string) {
 	}
 	if byte_base > 0 {
 		if byte_base == 8 && (byte_code < 0 || byte_code > 255) {
-			panic("illegal: octal value over 255")
+			return "", "", "illegal: octal value over 255"
 		}
-		if byte_base == 16 && (byte_code > 0x10FFFF || (byte_code > 0xD800 && byte_code < 0xDFFF)) {
-			panic("illegal: surrogate half")
+		if byte_base == 16 && (byte_code > 0x10FFFF || (byte_code >= 0xD800 && byte_code <= 0xDFFF)) {
+			return "", "", "illegal: invalid Unicode code point"
 		}
 		lexem = string(rune(byte_code))
 	} else if i > 2 {
-		panic("illegal: too many characters")
+		return "", "", "illegal: too many characters"
 	}
 	return
 }
 
 func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
-	lexem, literal = l.lexCharSymbol()
+	lexem, literal, error := l.lexCharSymbol()
+	if len(error) > 0 {
+		return ILLEGAL, error, ""
+	}
 	literal = "'" + literal
 	r, err := l.readNext()
 	if err != nil {
@@ -638,7 +647,7 @@ func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	for i := 0; i < len(literal)-1; i++ {
 		l.backup()
 	}
-	return ILLEGAL, "rune literal not terminated", ""
+	return ILLEGAL, "illegal: rune literal not terminated", ""
 }
 
 func (l *Lexer) lexString(isRaw bool) (token Token, lexem string, literal string) {
@@ -660,7 +669,10 @@ func (l *Lexer) lexString(isRaw bool) (token Token, lexem string, literal string
 			return ILLEGAL, "illegal: string literal not terminated", ""
 		}
 		l.backup()
-		char_lexem, char_literal := l.lexCharSymbol()
+		char_lexem, char_literal, error := l.lexCharSymbol()
+		if len(error) > 0 {
+			return ILLEGAL, error, ""
+		}
 		lexem += char_lexem
 		literal += char_literal
 	}
