@@ -144,7 +144,7 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 				}
 				return startPos, IDENT, lex, lex
 			} else {
-				return l.position, ILLEGAL, string(r), string(r)
+				return l.position, ILLEGAL, "illegal symbol" + string(r) + "spotted", ""
 			}
 		}
 	}
@@ -243,7 +243,7 @@ func (l *Lexer) lexInt() (Token, string, string) {
 			}
 			lexem = RuneToInt(r) + lexem*base
 			if lexem > 2147483647 {
-				panic("int overflow")
+				return ILLEGAL, "illegal: integer value overflow", ""
 			}
 		} else {
 			if literal == "0x" {
