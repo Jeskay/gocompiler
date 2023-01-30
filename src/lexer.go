@@ -3,7 +3,6 @@ package lexer
 import (
 	"bufio"
 	"io"
-	"strconv"
 	"strings"
 	"unicode"
 )
@@ -73,7 +72,7 @@ func (l *Lexer) Lex() (Position, Token, any, string) {
 			return startPos, token, lex, lit
 		case '.':
 			startPos := l.position
-			token, lex, lit := l.lexDecimal()
+			token, lex, lit := l.lexEllipsis()
 			return startPos, token, lex, lit
 		case '>':
 			startPos := l.position
@@ -308,6 +307,10 @@ loop:
 	}
 out:
 	if sawdot {
+		if str.String() == "." {
+			l.backup()
+			return l.lexEllipsis()
+		}
 		switch base {
 		case 10:
 			str_convert := str.String()
@@ -483,12 +486,17 @@ func (l *Lexer) lexMinus() (Token, string, string) {
 	return SUB, "-", "-"
 }
 
-func (l *Lexer) lexEllipsis() (Token, string, string) {
+func (l *Lexer) lexEllipsis() (Token, any, string) {
 	count := 1
 	for {
 		r, err := l.readNext()
 		if err != nil {
 			break
+		}
+		if IsDigit(r) {
+			l.backup()
+			l.backup()
+			return l.lexDecimal()
 		}
 		if r == '.' {
 			count++
@@ -764,27 +772,6 @@ func intToString(num int64) string {
 		num = num / 10
 	}
 	return result
-}
-func floatToString(num float64) string {
-	return strconv.FormatFloat(num, 'f', -1, 64)
-}
-func pow(base int64, degree int64) (result float64) {
-	var i int64
-	result = 1
-	for i = 0; i < abs(degree); i++ {
-		result *= float64(base)
-	}
-	if degree > 0 {
-		return result
-	} else {
-		return 1 / result
-	}
-}
-func abs(num int64) int64 {
-	if num > 0 {
-		return num
-	}
-	return -num
 }
 
 func RuneInBase(base int64, r rune) bool {

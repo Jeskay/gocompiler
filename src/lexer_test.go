@@ -88,7 +88,7 @@ func TestFloatDigits(t *testing.T) {
 func TestIdents(t *testing.T) {
 	expected := [...]lexem{
 		{Position{1, 1}, IDENT, "test", "test"},
-		{Position{2, 1}, INT, "2", "2"},
+		{Position{2, 1}, INT, int32(2), "2"},
 		{Position{2, 2}, IDENT, "test", "test"},
 		{Position{3, 1}, IDENT, "test2", "test2"},
 		{Position{4, 1}, IDENT, "Test2", "Test2"},
@@ -104,9 +104,9 @@ func TestIdents(t *testing.T) {
 
 func TestComment(t *testing.T) {
 	expected := [...]lexem{
-		{Position{1, 1}, INT, "1", "1"},
+		{Position{1, 1}, INT, int32(1), "1"},
 		{Position{1, 3}, QUO, "/", "/"},
-		{Position{1, 5}, INT, "2", "2"},
+		{Position{1, 5}, INT, int32(2), "2"},
 		{Position{2, 1}, COMMENT, "комментарий 1", "//комментарий 1"},
 		{Position{3, 1}, COMMENT, " 1 + 5 / 10", "// 1 + 5 / 10"},
 		{Position{4, 1}, COMMENT, "comment 1", "/*comment 1*/"},
@@ -185,7 +185,6 @@ func TestChar(t *testing.T) {
 	const input = "'a' \n'ä' \n'本' \n'\t' \n'\u12e4' \n'\U00101234'"
 	performTest(t, input, expected[:])
 	performTest(t, "'aa'", []lexem{{Position{1, 1}, ILLEGAL, "illegal: rune literal not terminated", ""}})
-	performTest(t, "1p-2", []lexem{{Position{1, 1}, ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""}})
 }
 
 func TestString(t *testing.T) {

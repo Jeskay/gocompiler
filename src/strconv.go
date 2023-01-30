@@ -464,7 +464,7 @@ func bitsFromHex(s string, mantissa uint64, exponent int, truncate bool) (float6
 	if exponent > maxExp { // infinity and range error
 		mantissa = 1 << mantissBits
 		exponent = maxExp + 1
-		err = errors.New("Parse float")
+		err = errors.New("parse float")
 	}
 	bits := mantissa & (1<<mantissBits - 1)
 	bits |= uint64((exponent-bias)&(1<<exponentBits-1)) << mantissBits
