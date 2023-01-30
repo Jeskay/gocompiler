@@ -9,7 +9,7 @@ import (
 type lexem struct {
 	pos Position
 	tok Token
-	lex string
+	lex any
 	lit string
 }
 
@@ -37,18 +37,18 @@ func performTest(t *testing.T, input string, expect []lexem) {
 }
 func TestIntDigits(t *testing.T) {
 	var expected = [...]lexem{
-		{Position{1, 1}, INT, "1910", "1910"},
-		{Position{2, 1}, INT, "0", "0"},
-		{Position{3, 1}, INT, "4", "0b100"},
-		{Position{4, 1}, INT, "7", "0b00111"},
-		{Position{5, 1}, INT, "511", "0777"},
-		{Position{6, 1}, INT, "668", "0o1234"},
-		{Position{7, 1}, INT, "282", "0O0432"},
-		{Position{8, 1}, INT, "427", "0x01AB"},
-		{Position{9, 1}, INT, "171", "0Xab"},
-		{Position{10, 1}, INT, "384", "0_600"},
-		{Position{11, 1}, INT, "195951310", "0xBadFace"},
-		{Position{12, 1}, INT, "195951310", "0xBad_Face"},
+		{Position{1, 1}, INT, int32(1910), "1910"},
+		{Position{2, 1}, INT, int32(0), "0"},
+		{Position{3, 1}, INT, int32(4), "0b100"},
+		{Position{4, 1}, INT, int32(7), "0b00111"},
+		{Position{5, 1}, INT, int32(511), "0777"},
+		{Position{6, 1}, INT, int32(668), "0o1234"},
+		{Position{7, 1}, INT, int32(282), "0O0432"},
+		{Position{8, 1}, INT, int32(427), "0x01AB"},
+		{Position{9, 1}, INT, int32(171), "0Xab"},
+		{Position{10, 1}, INT, int32(384), "0_600"},
+		{Position{11, 1}, INT, int32(195951310), "0xBadFace"},
+		{Position{12, 1}, INT, int32(195951310), "0xBad_Face"},
 	}
 	const input = "1910 \n0 \n0b100 \n0b00111 \n0777 \n0o1234 \n0O0432 \n0x01AB \n0Xab \n0_600 \n0xBadFace \n0xBad_Face"
 	performTest(t, input, expected[:])
@@ -58,27 +58,27 @@ func TestIntDigits(t *testing.T) {
 
 func TestFloatDigits(t *testing.T) {
 	expected := [...]lexem{
-		{Position{1, 1}, FLOAT, "15", "0.15e+0_2"},
-		{Position{2, 1}, FLOAT, "2048", "0x2.p10"},
-		{Position{3, 1}, FLOAT, "2.71828", "2.71828"},
-		{Position{4, 1}, FLOAT, "0", "0000."},
-		{Position{5, 1}, FLOAT, "72.4", "072.40"},
-		{Position{6, 1}, FLOAT, "1.9375", "0x1.Fp+0"},
-		{Position{7, 1}, FLOAT, "1", "1.e+0"},
-		{Position{8, 1}, FLOAT, "0.0000000000667428", "6.67428e-11"},
-		{Position{9, 1}, FLOAT, "1000000", "1E6"},
-		{Position{10, 1}, FLOAT, "0.25", ".25"},
-		{Position{11, 1}, FLOAT, "12345", ".12345E+5"},
-		{Position{12, 1}, FLOAT, "15", "1_5."},
-		{Position{13, 1}, FLOAT, "15", "0.15e+0_2"},
-		{Position{14, 1}, FLOAT, "0.25", "0x1p-2"},
-		{Position{15, 1}, FLOAT, "2048", "0x2.p10"},
-		{Position{16, 1}, FLOAT, "1.9375", "0x1.Fp+0"},
-		{Position{17, 1}, FLOAT, "0.5", "0X.8p-0"},
-		{Position{18, 1}, FLOAT, "0.1249847412109375", "0X_1FFFP-16"},
-		{Position{19, 1}, INT, "350", "0x15e"},
+		{Position{1, 1}, FLOAT, 15, "0.15e+0_2"},
+		{Position{2, 1}, FLOAT, 2048, "0x2.p10"},
+		{Position{3, 1}, FLOAT, 2.71828, "2.71828"},
+		{Position{4, 1}, FLOAT, 0, "0000."},
+		{Position{5, 1}, FLOAT, 72.4, "072.40"},
+		{Position{6, 1}, FLOAT, 1.9375, "0x1.Fp+0"},
+		{Position{7, 1}, FLOAT, 1, "1.e+0"},
+		{Position{8, 1}, FLOAT, 6.67428e-11, "6.67428e-11"},
+		{Position{9, 1}, FLOAT, 1000000, "1E6"},
+		{Position{10, 1}, FLOAT, 0.25, ".25"},
+		{Position{11, 1}, FLOAT, 12345, ".12345E+5"},
+		{Position{12, 1}, FLOAT, 15, "1_5."},
+		{Position{13, 1}, FLOAT, 15, "0.15e+0_2"},
+		{Position{14, 1}, FLOAT, 0.25, "0x1p-2"},
+		{Position{15, 1}, FLOAT, 2048, "0x2.p10"},
+		{Position{16, 1}, FLOAT, 1.9375, "0x1.Fp+0"},
+		{Position{17, 1}, FLOAT, 0.5, "0X.8p-0"},
+		{Position{18, 1}, FLOAT, 0.1249847412109375, "0X_1FFFP-16"},
+		{Position{19, 1}, INT, 350, "0x15e"},
 		{Position{19, 6}, SUB, "-", "-"},
-		{Position{19, 7}, INT, "2", "2"},
+		{Position{19, 7}, INT, 2, "2"},
 	}
 	const input = "0.15e+0_2 \n0x2.p10 \n2.71828 \n0000. \n072.40 \n0x1.Fp+0 \n1.e+0 \n6.67428e-11 \n1E6 \n.25 \n.12345E+5 \n1_5. \n0.15e+0_2  \n0x1p-2 \n0x2.p10 \n0x1.Fp+0 \n0X.8p-0 \n0X_1FFFP-16 \n0x15e-2"
 	performTest(t, input, expected[:])

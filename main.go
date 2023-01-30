@@ -5,6 +5,8 @@ import (
 	"fmt"
 	lexer "gocompiler/src"
 	"os"
+
+	//"strconv"
 	"strings"
 )
 
@@ -14,6 +16,8 @@ var options struct {
 }
 
 func main() {
+	//var t, err = strconv.ParseFloat("0x2.p10", 32)
+	//fmt.Print(t, err)
 	flag.StringVar(&options.source, "source", "input.txt", "filename of source to lex")
 	flag.BoolVar(&options.lex, "lex", false, "perform lexical analysis")
 	flag.Parse()
@@ -29,7 +33,7 @@ func main() {
 			if tok == lexer.EOF {
 				break
 			}
-			fmt.Printf("%d:%d\t%s\t%s\t%s\n", pos.Line, pos.Column, tok, strings.ReplaceAll(lex, "\r", ""), strings.ReplaceAll(lit, "\r", ""))
+			fmt.Printf("%d:%d\t%s\t%v\t%s\n", pos.Line, pos.Column, tok, lex, strings.ReplaceAll(lit, "\r", ""))
 			if tok == lexer.ILLEGAL {
 				break
 			}

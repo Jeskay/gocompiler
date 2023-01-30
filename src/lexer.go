@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"strconv"
+	"strings"
 	"unicode"
 )
 
@@ -27,7 +28,7 @@ func NewLexer(reader io.Reader) *Lexer {
 	}
 }
 
-func (l *Lexer) Lex() (Position, Token, string, string) {
+func (l *Lexer) Lex() (Position, Token, any, string) {
 	for {
 		r, err := l.readNext()
 		if err != nil {
@@ -72,7 +73,7 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 			return startPos, token, lex, lit
 		case '.':
 			startPos := l.position
-			token, lex, lit := l.lexFloat(10, 0, ".")
+			token, lex, lit := l.lexDecimal()
 			return startPos, token, lex, lit
 		case '>':
 			startPos := l.position
@@ -132,7 +133,7 @@ func (l *Lexer) Lex() (Position, Token, string, string) {
 			} else if IsDigit(r) {
 				startPos := l.position
 				l.backup()
-				token, lex, lit := l.lexInt()
+				token, lex, lit := l.lexDecimal()
 				return startPos, token, lex, lit
 			} else if IsLetter(r) {
 				startPos := l.position
@@ -185,31 +186,174 @@ func (l *Lexer) readNext() (symbol rune, err error) {
 	return
 }
 
-func (l *Lexer) lexInt() (Token, string, string) {
-	var lexem, base, additional_lexem int64 = 0, 10, 0
-	var literal string = ""
-	uncertainBase := false
-	for {
-		r, err := l.readNext()
+func (l *Lexer) lexDecimal() (Token, any, string) {
+	var str strings.Builder
+	var literal strings.Builder
+	var r rune
+	var err error
+	var base uint64 = 10
+	var sawdot = false
+	var sawexp = false
+
+	var maxMantiss = 19
+
+	ndigits := 0
+	ndMant := 0
+	var mantiss uint64
+	var truncate = false
+	var exponent int
+	var pointIndex int
+	var esign int = 1
+	var e int = 0
+
+	for i := 0; ; i++ {
+		r, err = l.readNext()
 		if err != nil {
-			return INT, intToString(lexem), literal
+			if err == io.EOF {
+				goto out
+			}
+			return ILLEGAL, "Unexpected error", ""
 		}
-		if literal == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
+		literal.WriteRune(r)
+		str_convert := str.String()
+		if str_convert == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
 			return ILLEGAL, "illegal: _ must separate successive digits", ""
 		}
-		if literal == "0" {
+		if str_convert == "0" {
 			switch r {
 			case 'x', 'X':
 				base = 16
-				literal += string(r)
+				maxMantiss = 16
+				str.WriteRune(r)
 				continue
 			case 'o', 'O':
 				base = 8
-				literal += string(r)
+				str.WriteRune(r)
 				continue
 			case 'b', 'B':
 				base = 2
-				literal += string(r)
+				str.WriteRune(r)
+				continue
+			default:
+				base = 8
+			}
+		}
+		if r == '_' {
+			str.WriteRune(r)
+			continue
+		}
+
+		if r == '.' && !sawdot {
+			sawdot = true
+			pointIndex = ndigits
+			str.WriteRune(r)
+			continue
+		}
+		if RuneInBase(int64(base), r) {
+			str.WriteRune(r)
+			if r == '0' && ndigits == 0 {
+				pointIndex--
+				continue
+			}
+			ndigits++
+			if ndMant < maxMantiss {
+				mantiss *= base
+				mantiss += uint64(RuneToInt(r))
+				ndMant++
+			} else {
+				truncate = true
+			}
+		} else if (((r == 'e' || r == 'E') && base == 10) || ((r == 'p' || r == 'P') && base == 16)) && !sawexp {
+			str.WriteRune(r)
+			goto loop
+		} else {
+			l.backup()
+			goto out
+		}
+	}
+loop:
+	if !sawdot {
+		pointIndex = ndigits
+	}
+	if base == 16 {
+		pointIndex *= 4
+		ndMant *= 4
+	}
+	r, err = l.readNext()
+	if err != nil {
+		return ILLEGAL, "Unexpected error", ""
+	}
+	if r == '-' {
+		esign = -1
+		r, err = l.readNext()
+		str.WriteRune(r)
+		literal.WriteRune(r)
+	}
+	for ; IsDigit(r) || r == '_'; r, err = l.readNext() {
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return ILLEGAL, "Unexpected error", ""
+		}
+		literal.WriteRune(r)
+		str.WriteRune(r)
+		if e < 10000 {
+			e = e*10 + int(RuneToInt(r))
+		}
+	}
+	pointIndex += e * esign
+	if mantiss != 0 {
+		exponent = pointIndex - ndMant
+	}
+out:
+	if sawdot {
+		switch base {
+		case 10:
+			str_convert := str.String()
+			var d decimal
+			err := d.fromString(str_convert)
+			if err != nil {
+				return ILLEGAL, err.Error(), ""
+			}
+			bits, _ := d.floatBits()
+			return FLOAT, Float32FromBits(uint32(bits)), literal.String()
+		case 16:
+			lex, err := bitsFromHex(str.String(), mantiss, exponent, truncate)
+			if err != nil {
+				return ILLEGAL, "unexpeted error", ""
+			}
+			return FLOAT, lex, literal.String() // reading Hex
+		default:
+			return ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
+		}
+	} else {
+		return l.lexInt(str.String())
+	}
+}
+
+func (l *Lexer) lexInt(s string) (Token, any, string) {
+	var lexem, base, additional_lexem int64 = 0, 10, 0
+	var literal strings.Builder
+	uncertainBase := false
+	for _, r := range s {
+		str_convert := literal.String()
+		if str_convert == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
+			return ILLEGAL, "illegal: _ must separate successive digits", ""
+		}
+		if str_convert == "0" {
+			switch r {
+			case 'x', 'X':
+				base = 16
+				literal.WriteRune(r)
+				continue
+			case 'o', 'O':
+				base = 8
+				literal.WriteRune(r)
+				continue
+			case 'b', 'B':
+				base = 2
+				literal.WriteRune(r)
 				continue
 			default:
 				base = 8
@@ -217,27 +361,22 @@ func (l *Lexer) lexInt() (Token, string, string) {
 			}
 		}
 		if r == '_' {
-			literal += string(r)
+			literal.WriteRune(r)
 			continue
 		}
 		if (r == '.' || r == 'p' || r == 'P') && (base == 10 || base == 16 || uncertainBase) || ((r == 'e' || r == 'E') && (base == 10 || uncertainBase)) {
 			if r == 'p' || r == 'P' || r == 'e' || r == 'E' {
 				l.backup()
 			} else {
-				literal += string(r)
-			}
-			if uncertainBase {
-				return l.lexFloat(10, additional_lexem, literal)
-			} else {
-				return l.lexFloat(base, lexem, literal)
+				literal.WriteRune(r)
 			}
 		}
 		if r == 'i' {
-			literal += string(r)
-			return IMAG, intToString(lexem) + "i", literal
+			literal.WriteRune(r)
+			return IMAG, intToString(lexem) + "i", literal.String() //TODO
 		}
 		if RuneInBase(base, r) {
-			literal += string(r)
+			literal.WriteRune(r)
 			if uncertainBase {
 				additional_lexem = RuneToInt(r) + additional_lexem*10
 			}
@@ -246,97 +385,15 @@ func (l *Lexer) lexInt() (Token, string, string) {
 				return ILLEGAL, "illegal: integer value overflow", ""
 			}
 		} else {
-			if literal == "0x" {
-				literal = "0"
-				l.backup()
-			}
-			l.backup()
-			return INT, intToString(lexem), literal
-		}
-	}
-}
-func (l *Lexer) lexFloat(base int64, lexem int64, literal string) (Token, string, string) {
-	var i, k, expBase, mantissa int64 = 1, 1, 1, 0
-	var mantissaSign int64 = 1
-
-	for {
-		r, err := l.readNext()
-		if err != nil {
 			break
 		}
-		if (r == 'p' || r == 'P') && expBase == 1 && lexem != 0 {
-			if base != 16 {
-				return ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
-			}
-			if literal[len(literal)-1] == '_' {
-				l.backup()
-				l.backup()
-				break
-			}
-			i = 1
-			base = 10
-			expBase = 2
-			literal += string(r)
-			continue
-		} else if (r == 'e' || r == 'E') && expBase == 1 && lexem != 0 {
-			if base == 16 {
-				return ILLEGAL, "illegal: hexadecimal mantissa requires p exponent", ""
-			}
-			if literal[len(literal)-1] == '_' {
-				l.backup()
-				l.backup()
-				break
-			}
-			i = 1
-			expBase = 10
-			literal += string(r)
-			continue
-		} else if literal[len(literal)-1] == 'p' || literal[len(literal)-1] == 'e' || literal[len(literal)-1] == 'E' || literal[len(literal)-1] == 'P' {
-			if r == '-' {
-				mantissaSign = -1
-				literal += string(r)
-				continue
-			}
-			if r == '+' {
-				literal += string(r)
-				continue
-			}
-			if r == '_' {
-				l.backup()
-				break
-			}
-		}
-		if r == '_' {
-			literal += string(r)
-			continue
-		}
-		if r == 'i' {
-			literal += string(r)
-			result := float64(lexem) / float64(k)
-			return IMAG, floatToString(result*pow(expBase, mantissa*mantissaSign)) + "i", literal
-		}
-		if expBase != 1 && RuneInBase(10, r) {
-			mantissa = RuneToInt(r) + mantissa*i
-			i *= base
-		} else if RuneInBase(base, r) {
-			i *= base
-			k *= base
-			lexem = RuneToInt(r) + lexem*base
-		} else if literal == "." {
-			l.backup()
-			return l.lexEllipsis()
-		} else {
-			if literal[len(literal)-1] == '+' || literal[len(literal)-1] == '-' {
-				literal = literal[:len(literal)-1]
-				l.backup()
-			}
-			l.backup()
-			break
-		}
-		literal += string(r)
 	}
-	result := float64(lexem) / float64(k)
-	return FLOAT, floatToString(result * pow(expBase, mantissa*mantissaSign)), literal
+	if literal.String() == "0x" {
+		literal.Reset()
+		literal.WriteString("0")
+		l.backup()
+	}
+	return INT, int32(lexem), literal.String()
 }
 
 func (l *Lexer) lexIdent() string {
