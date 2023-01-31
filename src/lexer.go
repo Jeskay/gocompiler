@@ -213,7 +213,6 @@ func (l *Lexer) lexDecimal() (Token, any, string) {
 			}
 			return ILLEGAL, "Unexpected error", ""
 		}
-		literal.WriteRune(r)
 		str_convert := str.String()
 		if str_convert == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
 			return ILLEGAL, "illegal: _ must separate successive digits", ""
@@ -223,33 +222,37 @@ func (l *Lexer) lexDecimal() (Token, any, string) {
 			case 'x', 'X':
 				base = 16
 				maxMantiss = 16
+				literal.WriteRune(r)
 				str.WriteRune(r)
 				continue
 			case 'o', 'O':
 				base = 8
+				literal.WriteRune(r)
 				str.WriteRune(r)
 				continue
 			case 'b', 'B':
 				base = 2
+				literal.WriteRune(r)
 				str.WriteRune(r)
 				continue
-			default:
-				base = 8
 			}
 		}
 		if r == '_' {
 			str.WriteRune(r)
+			literal.WriteRune(r)
 			continue
 		}
 
 		if r == '.' && !sawdot {
 			sawdot = true
 			pointIndex = ndigits
+			literal.WriteRune(r)
 			str.WriteRune(r)
 			continue
 		}
 		if RuneInBase(int64(base), r) {
 			str.WriteRune(r)
+			literal.WriteRune(r)
 			if r == '0' && ndigits == 0 {
 				pointIndex--
 				continue
@@ -262,8 +265,15 @@ func (l *Lexer) lexDecimal() (Token, any, string) {
 			} else {
 				truncate = true
 			}
-		} else if (((r == 'e' || r == 'E') && base == 10) || ((r == 'p' || r == 'P') && base == 16)) && !sawexp {
+		} else if (r == '-' || r == '+') && base == 16 && (str_convert[len(str_convert)-1] == 'e' || str_convert[len(str_convert)-1] == 'E') && sawdot {
+			return ILLEGAL, "illegal: hexadecimal mantissa requires p exponent", ""
+		} else if (r == 'e' || r == 'E' || r == 'p' || r == 'P') && !sawexp {
+			if base == 10 && (r == 'p' || r == 'P') {
+				return ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
+			}
+			literal.WriteRune(r)
 			str.WriteRune(r)
+			sawexp = true
 			goto loop
 		} else {
 			l.backup()
@@ -282,13 +292,16 @@ loop:
 	if err != nil {
 		return ILLEGAL, "Unexpected error", ""
 	}
-	if r == '-' {
-		esign = -1
-		r, err = l.readNext()
-		str.WriteRune(r)
+	if r == '-' || r == '+' {
 		literal.WriteRune(r)
+		str.WriteRune(r)
+		if r == '-' {
+			esign = -1
+		}
+	} else {
+		l.backup()
 	}
-	for ; IsDigit(r) || r == '_'; r, err = l.readNext() {
+	for r, err = l.readNext(); IsDigit(r) || r == '_'; r, err = l.readNext() {
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -296,6 +309,9 @@ loop:
 			return ILLEGAL, "Unexpected error", ""
 		}
 		literal.WriteRune(r)
+		if r == '_' {
+			continue
+		}
 		str.WriteRune(r)
 		if e < 10000 {
 			e = e*10 + int(RuneToInt(r))
@@ -306,7 +322,7 @@ loop:
 		exponent = pointIndex - ndMant
 	}
 out:
-	if sawdot {
+	if sawdot || sawexp {
 		if str.String() == "." {
 			l.backup()
 			return l.lexEllipsis()
@@ -326,7 +342,7 @@ out:
 			if err != nil {
 				return ILLEGAL, "unexpeted error", ""
 			}
-			return FLOAT, lex, literal.String() // reading Hex
+			return FLOAT, float32(lex), literal.String() // reading Hex
 		default:
 			return ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
 		}

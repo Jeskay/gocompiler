@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 )
@@ -13,8 +14,21 @@ type lexem struct {
 	lit string
 }
 
+const float64EqualityThreshold = 1e-9
+
+func compareFloat32(a, b float32) bool {
+	return math.Abs(float64(a-b)) <= float64EqualityThreshold
+}
 func (l *lexem) Compare(l2 lexem) bool {
-	return l2.pos.Line == l.pos.Line && l2.pos.Column == l.pos.Column && l2.tok == l.tok && l2.lit == l.lit && l.lex == l2.lex
+	var isLexemEqual bool
+	var f1, ok1 = l.lex.(float32)
+	var f2, ok2 = l.lex.(float32)
+	if ok1 && ok2 {
+		isLexemEqual = compareFloat32(f1, f2)
+	} else {
+		isLexemEqual = l.lex == l2.lex
+	}
+	return l2.pos.Line == l.pos.Line && l2.pos.Column == l.pos.Column && l2.tok == l.tok && l2.lit == l.lit && isLexemEqual
 }
 func (l *lexem) ToString() string {
 	return fmt.Sprintf("%d:%d\t%s\t%s\t%s\n", l.pos.Line, l.pos.Column, l.tok, l.lex, l.lit)
@@ -58,27 +72,27 @@ func TestIntDigits(t *testing.T) {
 
 func TestFloatDigits(t *testing.T) {
 	expected := [...]lexem{
-		{Position{1, 1}, FLOAT, 15, "0.15e+0_2"},
-		{Position{2, 1}, FLOAT, 2048, "0x2.p10"},
-		{Position{3, 1}, FLOAT, 2.71828, "2.71828"},
-		{Position{4, 1}, FLOAT, 0, "0000."},
-		{Position{5, 1}, FLOAT, 72.4, "072.40"},
-		{Position{6, 1}, FLOAT, 1.9375, "0x1.Fp+0"},
-		{Position{7, 1}, FLOAT, 1, "1.e+0"},
-		{Position{8, 1}, FLOAT, 6.67428e-11, "6.67428e-11"},
-		{Position{9, 1}, FLOAT, 1000000, "1E6"},
-		{Position{10, 1}, FLOAT, 0.25, ".25"},
-		{Position{11, 1}, FLOAT, 12345, ".12345E+5"},
-		{Position{12, 1}, FLOAT, 15, "1_5."},
-		{Position{13, 1}, FLOAT, 15, "0.15e+0_2"},
-		{Position{14, 1}, FLOAT, 0.25, "0x1p-2"},
-		{Position{15, 1}, FLOAT, 2048, "0x2.p10"},
-		{Position{16, 1}, FLOAT, 1.9375, "0x1.Fp+0"},
-		{Position{17, 1}, FLOAT, 0.5, "0X.8p-0"},
-		{Position{18, 1}, FLOAT, 0.1249847412109375, "0X_1FFFP-16"},
-		{Position{19, 1}, INT, 350, "0x15e"},
+		{Position{1, 1}, FLOAT, float32(0.15e+0_2), "0.15e+0_2"},
+		{Position{2, 1}, FLOAT, float32(0x2.p10), "0x2.p10"},
+		{Position{3, 1}, FLOAT, float32(2.71828), "2.71828"},
+		{Position{4, 1}, FLOAT, float32(0), "0000."},
+		{Position{5, 1}, FLOAT, float32(72.4), "072.40"},
+		{Position{6, 1}, FLOAT, float32(0x1.Fp+0), "0x1.Fp+0"},
+		{Position{7, 1}, FLOAT, float32(1.e+0), "1.e+0"},
+		{Position{8, 1}, FLOAT, float32(6.67428e-11), "6.67428e-11"},
+		{Position{9, 1}, FLOAT, float32(1e6), "1E6"},
+		{Position{10, 1}, FLOAT, float32(.25), ".25"},
+		{Position{11, 1}, FLOAT, float32(.12345e+5), ".12345E+5"},
+		{Position{12, 1}, FLOAT, float32(1_5.), "1_5."},
+		{Position{13, 1}, FLOAT, float32(0.15e+0_2), "0.15e+0_2"},
+		{Position{14, 1}, FLOAT, float32(0x1p-2), "0x1p-2"},
+		{Position{15, 1}, FLOAT, float32(0x2.p10), "0x2.p10"},
+		{Position{16, 1}, FLOAT, float32(0x1.Fp+0), "0x1.Fp+0"},
+		{Position{17, 1}, FLOAT, float32(0x.8p-0), "0X.8p-0"},
+		{Position{18, 1}, FLOAT, float32(0x_1FFFp-16), "0X_1FFFP-16"},
+		{Position{19, 1}, INT, int32(350), "0x15e"},
 		{Position{19, 6}, SUB, "-", "-"},
-		{Position{19, 7}, INT, 2, "2"},
+		{Position{19, 7}, INT, int32(2), "2"},
 	}
 	const input = "0.15e+0_2 \n0x2.p10 \n2.71828 \n0000. \n072.40 \n0x1.Fp+0 \n1.e+0 \n6.67428e-11 \n1E6 \n.25 \n.12345E+5 \n1_5. \n0.15e+0_2  \n0x1p-2 \n0x2.p10 \n0x1.Fp+0 \n0X.8p-0 \n0X_1FFFP-16 \n0x15e-2"
 	performTest(t, input, expected[:])
