@@ -457,10 +457,13 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 				return
 			}
 		}
-		if r == '\n' && comment == "//" {
-			token = COMMENT
-			l.backup()
-			return
+		if r == '\n' {
+			if comment == "//" {
+				token = COMMENT
+				l.backup()
+				return
+			}
+			l.nextLine()
 		} else if r == '/' && len(literal) > 0 && literal[len(literal)-1] == '*' && comment == "/*" {
 			literal += string(r)
 			lexem = lexem[:len(lexem)-1]

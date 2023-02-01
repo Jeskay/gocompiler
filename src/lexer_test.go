@@ -126,8 +126,8 @@ func TestComment(t *testing.T) {
 		{Position{4, 1}, COMMENT, "comment 1", "/*comment 1*/"},
 		{Position{5, 1}, COMMENT, "/sdfsdf", "///sdfsdf"},
 		{Position{6, 1}, COMMENT, "1t\n2t\n3t", "/*1t\n2t\n3t*/"},
-		{Position{7, 1}, IDENT, "end", "end"},
-		{Position{8, 1}, COMMENT, "comment with no ending quote", "/*comment with no ending quote"},
+		{Position{9, 1}, IDENT, "end", "end"},
+		{Position{10, 1}, COMMENT, "comment with no ending quote", "/*comment with no ending quote"},
 	}
 	const input = "1 / 2\n//комментарий 1\n// 1 + 5 / 10\n/*comment 1*/\n///sdfsdf\n/*1t\n2t\n3t*/\nend\n/*comment with no ending quote"
 	performTest(t, input, expected[:])
