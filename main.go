@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	lexer "gocompiler/src"
+	lexer "gocompiler/src/lexer"
 	"os"
 
 	//"strconv"

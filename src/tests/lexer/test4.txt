@@ -1,0 +1,10 @@
+1 / 2
+//комментарий 1
+// 1 + 5 / 10
+/*comment 1*/
+///sdfsdf
+/*1t
+2t
+3t*/
+end
+/*comment with no ending quote

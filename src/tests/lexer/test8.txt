@@ -1,0 +1,14 @@
+package hello
+
+import (
+    "fmt"
+)
+/*
+simple programm that greets you!
+accepts nothing
+*/
+func main() {
+    const message = `Hello world!
+end of the message`
+    fmt.Printf(message)
+}

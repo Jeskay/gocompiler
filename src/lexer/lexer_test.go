@@ -2,7 +2,9 @@ package lexer
 
 import (
 	"fmt"
+	"io"
 	"math"
+	"os"
 	"strings"
 	"testing"
 )
@@ -15,6 +17,18 @@ type lexem struct {
 }
 
 const float64EqualityThreshold = 1e-9
+
+func readInput(filename string) string {
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0600)
+	if err != nil {
+		panic(err)
+	}
+	b, err := io.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
 
 func compareFloat32(a, b float32) bool {
 	return math.Abs(float64(a-b)) <= float64EqualityThreshold
@@ -64,7 +78,7 @@ func TestIntDigits(t *testing.T) {
 		{Position{11, 1}, INT, int32(195951310), "0xBadFace"},
 		{Position{12, 1}, INT, int32(195951310), "0xBad_Face"},
 	}
-	const input = "1910 \n0 \n0b100 \n0b00111 \n0777 \n0o1234 \n0O0432 \n0x01AB \n0Xab \n0_600 \n0xBadFace \n0xBad_Face"
+	input := readInput("../tests/lexer/test1.txt")
 	performTest(t, input, expected[:])
 	performTest(t, "2147483649", []lexem{{Position{1, 1}, ILLEGAL, "illegal: integer value overflow", ""}})
 	performTest(t, "0_xBadFace", []lexem{{Position{1, 1}, ILLEGAL, "illegal: _ must separate successive digits", ""}})
@@ -94,7 +108,7 @@ func TestFloatDigits(t *testing.T) {
 		{Position{19, 6}, SUB, "-", "-"},
 		{Position{19, 7}, INT, int32(2), "2"},
 	}
-	const input = "0.15e+0_2 \n0x2.p10 \n2.71828 \n0000. \n072.40 \n0x1.Fp+0 \n1.e+0 \n6.67428e-11 \n1E6 \n.25 \n.12345E+5 \n1_5. \n0.15e+0_2  \n0x1p-2 \n0x2.p10 \n0x1.Fp+0 \n0X.8p-0 \n0X_1FFFP-16 \n0x15e-2"
+	input := readInput("../tests/lexer/test2.txt")
 	performTest(t, input, expected[:])
 	performTest(t, "1p-2", []lexem{{Position{1, 1}, ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""}})
 	performTest(t, "0x1.5e-2", []lexem{{Position{1, 1}, ILLEGAL, "illegal: hexadecimal mantissa requires p exponent", ""}})
@@ -112,7 +126,7 @@ func TestIdents(t *testing.T) {
 		{Position{8, 1}, IDENT, "___", "___"},
 		{Position{9, 2}, IDENT, "αβ", "αβ"},
 	}
-	const input = "test \n2test \ntest2 \nTest2 \nTEST \n_test2 \n_2test \n___ \n αβ"
+	input := readInput("../tests/lexer/test3.txt")
 	performTest(t, input, expected[:])
 }
 
@@ -129,7 +143,7 @@ func TestComment(t *testing.T) {
 		{Position{9, 1}, IDENT, "end", "end"},
 		{Position{10, 1}, COMMENT, "comment with no ending quote", "/*comment with no ending quote"},
 	}
-	const input = "1 / 2\n//комментарий 1\n// 1 + 5 / 10\n/*comment 1*/\n///sdfsdf\n/*1t\n2t\n3t*/\nend\n/*comment with no ending quote"
+	input := readInput("../tests/lexer/test4.txt")
 	performTest(t, input, expected[:])
 }
 
@@ -183,7 +197,7 @@ func TestOperands(t *testing.T) {
 		{Position{6, 6}, AND_NOT, "&^", "&^"},
 		{Position{6, 18}, AND_NOT_ASSIGN, "&^=", "&^="},
 	}
-	const input = "+    &     +=    &=     &&    ==    !=    (    )\n-    |     -=    |=     ||    <     <=    [    ]\n*    ^     *=    ^=     <-    >     >=    {    }\n/    <<    /=    <<=    ++    =     :=    ,    ;\n%    >>    %=    >>=    --    !     ...   .    : \n     &^          &^= "
+	input := readInput("../tests/lexer/test5.txt")
 	performTest(t, input, expected[:])
 }
 
@@ -196,7 +210,7 @@ func TestChar(t *testing.T) {
 		{Position{5, 1}, CHAR, "\u12e4", "'\u12e4'"},
 		{Position{6, 1}, CHAR, "\U00101234", "'\U00101234'"},
 	}
-	const input = "'a' \n'ä' \n'本' \n'\t' \n'\u12e4' \n'\U00101234'"
+	input := readInput("../tests/lexer/test6.txt")
 	performTest(t, input, expected[:])
 	performTest(t, "'aa'", []lexem{{Position{1, 1}, ILLEGAL, "illegal: rune literal not terminated", ""}})
 }
@@ -204,13 +218,13 @@ func TestChar(t *testing.T) {
 func TestString(t *testing.T) {
 	expected := [...]lexem{
 		{Position{1, 1}, STRING, "abc", "`abc`"},
-		{Position{2, 1}, STRING, "\n\n\n", "`\\n\n\\n`"},
-		{Position{3, 1}, STRING, "\n", "\"\\n\""},
-		{Position{4, 1}, STRING, `"`, `"\""`},
-		{Position{5, 1}, STRING, "Hello, world!\n", `"Hello, world!\n"`},
-		{Position{6, 1}, STRING, `日本語`, `"日本語"`},
+		{Position{2, 1}, STRING, "\n\n\n", "`\n\n\n`"},
+		{Position{6, 1}, STRING, "\n", "\"\\n\""},
+		{Position{7, 1}, STRING, `"`, `"\""`},
+		{Position{8, 1}, STRING, "Hello, world!\n", `"Hello, world!\n"`},
+		{Position{9, 1}, STRING, `日本語`, `"日本語"`},
 	}
-	const input = "`abc` \n`\\n\n\\n` \n\"\\n\" \n\"\\\"\" \n\"Hello, world!\\n\" \n\"日本語\""
+	input := readInput("../tests/lexer/test9.txt")
 	performTest(t, input, expected[:])
 	expected2 := [...]lexem{
 		{Position{1, 1}, STRING, "日本語", `"\u65e5本\U00008a9e"`},
@@ -229,7 +243,7 @@ func TestStringFormats(t *testing.T) {
 		{Position{1, 7}, STRING, "日本語", `"\u65e5\u672c\u8a9e"`},
 		{Position{1, 28}, STRING, "日本語", `"\U000065e5\U0000672c\U00008a9e"`},
 	}
-	const input = `"日本語" "\u65e5\u672c\u8a9e" "\U000065e5\U0000672c\U00008a9e"`
+	input := readInput("../tests/lexer/test7.txt")
 	performTest(t, input, expected[:])
 }
 
@@ -242,23 +256,24 @@ func TestHelloWorld(t *testing.T) {
 		{Position{4, 5}, STRING, "fmt", `"fmt"`},
 		{Position{5, 1}, RPAREN, ")", ")"},
 		{Position{6, 1}, COMMENT, "\nsimple programm that greets you!\naccepts nothing\n", "/*\nsimple programm that greets you!\naccepts nothing\n*/"},
-		{Position{7, 1}, FUNC, "func", "func"},
-		{Position{7, 6}, IDENT, "main", "main"},
-		{Position{7, 10}, LPAREN, "(", "("},
-		{Position{7, 11}, RPAREN, ")", ")"},
-		{Position{7, 13}, LBRACE, "{", "{"},
-		{Position{8, 5}, CONST, "const", "const"},
-		{Position{8, 11}, IDENT, "message", "message"},
-		{Position{8, 19}, ASSIGN, "=", "="},
-		{Position{8, 21}, STRING, "Hello world!\nend of the message", "`Hello world!\nend of the message`"},
-		{Position{9, 5}, IDENT, "fmt", "fmt"},
-		{Position{9, 8}, PERIOD, ".", "."},
-		{Position{9, 9}, IDENT, "Printf", "Printf"},
-		{Position{9, 15}, LPAREN, "(", "("},
-		{Position{9, 16}, IDENT, "message", "message"},
-		{Position{9, 23}, RPAREN, ")", ")"},
-		{Position{10, 1}, RBRACE, "}", "}"},
+		{Position{10, 1}, FUNC, "func", "func"},
+		{Position{10, 6}, IDENT, "main", "main"},
+		{Position{10, 10}, LPAREN, "(", "("},
+		{Position{10, 11}, RPAREN, ")", ")"},
+		{Position{10, 13}, LBRACE, "{", "{"},
+		{Position{11, 5}, CONST, "const", "const"},
+		{Position{11, 11}, IDENT, "message", "message"},
+		{Position{11, 19}, ASSIGN, "=", "="},
+		{Position{11, 21}, STRING, "Hello world!\nend of the message", "`Hello world!\nend of the message`"},
+		{Position{13, 5}, IDENT, "fmt", "fmt"},
+		{Position{13, 8}, PERIOD, ".", "."},
+		{Position{13, 9}, IDENT, "Printf", "Printf"},
+		{Position{13, 15}, LPAREN, "(", "("},
+		{Position{13, 16}, IDENT, "message", "message"},
+		{Position{13, 23}, RPAREN, ")", ")"},
+		{Position{14, 1}, RBRACE, "}", "}"},
 	}
-	const input = "package hello\n\nimport (\n    \"fmt\"\n)\n/*\nsimple programm that greets you!\naccepts nothing\n*/\nfunc main() {\n    const message = `Hello world!\nend of the message`\n    fmt.Printf(message)\n}"
+
+	input := readInput("../tests/lexer/test8.txt")
 	performTest(t, input, expected[:])
 }

@@ -746,6 +746,7 @@ func (l *Lexer) lexString(isRaw bool) (token Token, lexem string, literal string
 		}
 		if r == '\n' {
 			if isRaw {
+				l.nextLine()
 				literal += string(r)
 				lexem += string(r)
 				continue
