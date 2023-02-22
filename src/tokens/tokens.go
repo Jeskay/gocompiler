@@ -1,9 +1,27 @@
-package lexer
+package tokens
 
-type Token int
+import "fmt"
+
+type Token struct {
+	Pos Position
+	Tok TokenType
+	Lex any
+	Lit string
+}
+
+func (l *Token) ToString() string {
+	return fmt.Sprintf("%d:%d\t%s\t%s\t%s\n", l.Pos.Line, l.Pos.Column, l.Tok, l.Lex, l.Lit)
+}
+
+type Position struct {
+	Line   int
+	Column int
+}
+
+type TokenType int
 
 const (
-	EOF Token = iota
+	EOF TokenType = iota
 	ILLEGAL
 	COMMENT
 	//basic literals
@@ -201,15 +219,15 @@ var tokens = []string{
 	VAR:    "var",
 }
 
-func (t Token) String() string {
+func (t TokenType) String() string {
 	return tokens[t]
 }
 
-var keywords map[string]Token
+var Keywords map[string]TokenType
 
-func initKeywords() {
-	keywords = make(map[string]Token, keyword_end-(keyword_beg+1))
+func InitKeywords() {
+	Keywords = make(map[string]TokenType, keyword_end-(keyword_beg+1))
 	for i := keyword_beg + 1; i < keyword_end; i++ {
-		keywords[tokens[i]] = i
+		Keywords[tokens[i]] = i
 	}
 }

@@ -2,54 +2,51 @@ package lexer
 
 import (
 	"bufio"
+	"gocompiler/src/strconv"
+	"gocompiler/src/tokens"
 	"io"
 	"strings"
 	"unicode"
 )
 
-type Position struct {
-	Line   int
-	Column int
-}
-
 type Lexer struct {
-	position Position
+	position tokens.Position
 	reader   *bufio.Reader
 	buffer   *Buffer
 }
 
 func NewLexer(reader io.Reader) *Lexer {
-	initKeywords()
+	tokens.InitKeywords()
 	return &Lexer{
-		position: Position{Line: 1, Column: 0},
+		position: tokens.Position{Line: 1, Column: 0},
 		reader:   bufio.NewReader(reader),
 		buffer:   NewBuffer(10),
 	}
 }
 
-func (l *Lexer) Lex() (Position, Token, any, string) {
+func (l *Lexer) Lex() (tokens.Position, tokens.TokenType, any, string) {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			return l.position, EOF, "", ""
+			return l.position, tokens.EOF, "", ""
 		}
 		switch r {
 		case '\n':
 			l.nextLine()
 		case '(':
-			return l.position, LPAREN, "(", string(r)
+			return l.position, tokens.LPAREN, "(", string(r)
 		case ')':
-			return l.position, RPAREN, ")", string(r)
+			return l.position, tokens.RPAREN, ")", string(r)
 		case '[':
-			return l.position, LBRACK, "[", string(r)
+			return l.position, tokens.LBRACK, "[", string(r)
 		case ']':
-			return l.position, RBRACK, "]", string(r)
+			return l.position, tokens.RBRACK, "]", string(r)
 		case '{':
-			return l.position, LBRACE, "{", string(r)
+			return l.position, tokens.LBRACE, "{", string(r)
 		case '}':
-			return l.position, RBRACE, "}", string(r)
+			return l.position, tokens.RBRACE, "}", string(r)
 		case ',':
-			return l.position, COMMA, ",", string(r)
+			return l.position, tokens.COMMA, ",", string(r)
 		case '&':
 			startPos := l.position
 			token, lex, lit := l.lexAmpersand()
@@ -90,11 +87,11 @@ func (l *Lexer) Lex() (Position, Token, any, string) {
 			startPos := l.position
 			r2, err := l.readNext()
 			if err == nil && r2 == '=' {
-				return startPos, DEFINE, ":=", ":="
+				return startPos, tokens.DEFINE, ":=", ":="
 			}
-			return startPos, COLON, ":", string(r)
+			return startPos, tokens.COLON, ":", string(r)
 		case ';':
-			return l.position, SEMICOLON, ";", string(r)
+			return l.position, tokens.SEMICOLON, ";", string(r)
 		case '+':
 			startPos := l.position
 			token, lex, lit := l.lexPlus()
@@ -107,9 +104,9 @@ func (l *Lexer) Lex() (Position, Token, any, string) {
 			startPos := l.position
 			r2, err := l.readNext()
 			if err == nil && r2 == '=' {
-				return startPos, MUL_ASSIGN, "*=", "*="
+				return startPos, tokens.MUL_ASSIGN, "*=", "*="
 			}
-			return startPos, MUL, "*", string(r)
+			return startPos, tokens.MUL, "*", string(r)
 		case '/':
 			startPos := l.position
 			l.backup()
@@ -119,9 +116,9 @@ func (l *Lexer) Lex() (Position, Token, any, string) {
 			startPos := l.position
 			r2, err := l.readNext()
 			if err == nil && r2 == '=' {
-				return startPos, EQL, "==", "=="
+				return startPos, tokens.EQL, "==", "=="
 			}
-			return startPos, ASSIGN, "=", string(r)
+			return startPos, tokens.ASSIGN, "=", string(r)
 		case '\'':
 			startPos := l.position
 			token, lex, lit := l.lexChar()
@@ -138,13 +135,13 @@ func (l *Lexer) Lex() (Position, Token, any, string) {
 				startPos := l.position
 				l.backup()
 				lex := l.lexIdent()
-				keyword, ok := keywords[lex]
+				keyword, ok := tokens.Keywords[lex]
 				if ok {
 					return startPos, keyword, lex, lex
 				}
-				return startPos, IDENT, lex, lex
+				return startPos, tokens.IDENT, lex, lex
 			} else {
-				return l.position, ILLEGAL, "illegal symbol" + string(r) + "spotted", ""
+				return l.position, tokens.ILLEGAL, "illegal symbol" + string(r) + "spotted", ""
 			}
 		}
 	}
@@ -185,7 +182,7 @@ func (l *Lexer) readNext() (symbol rune, err error) {
 	return
 }
 
-func (l *Lexer) lexDecimal() (Token, any, string) {
+func (l *Lexer) lexDecimal() (tokens.TokenType, any, string) {
 	var str strings.Builder
 	var literal strings.Builder
 	var r rune
@@ -211,11 +208,11 @@ func (l *Lexer) lexDecimal() (Token, any, string) {
 			if err == io.EOF {
 				goto out
 			}
-			return ILLEGAL, "Unexpected error", ""
+			return tokens.ILLEGAL, "Unexpected error", ""
 		}
 		str_convert := str.String()
 		if str_convert == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
-			return ILLEGAL, "illegal: _ must separate successive digits", ""
+			return tokens.ILLEGAL, "illegal: _ must separate successive digits", ""
 		}
 		if str_convert == "0" {
 			switch r {
@@ -266,10 +263,10 @@ func (l *Lexer) lexDecimal() (Token, any, string) {
 				truncate = true
 			}
 		} else if (r == '-' || r == '+') && base == 16 && (str_convert[len(str_convert)-1] == 'e' || str_convert[len(str_convert)-1] == 'E') && sawdot {
-			return ILLEGAL, "illegal: hexadecimal mantissa requires p exponent", ""
+			return tokens.ILLEGAL, "illegal: hexadecimal mantissa requires p exponent", ""
 		} else if (r == 'e' || r == 'E' || r == 'p' || r == 'P') && !sawexp {
 			if base == 10 && (r == 'p' || r == 'P') {
-				return ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
+				return tokens.ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
 			}
 			literal.WriteRune(r)
 			str.WriteRune(r)
@@ -290,7 +287,7 @@ loop:
 	}
 	r, err = l.readNext()
 	if err != nil {
-		return ILLEGAL, "Unexpected error", ""
+		return tokens.ILLEGAL, "Unexpected error", ""
 	}
 	if r == '-' || r == '+' {
 		literal.WriteRune(r)
@@ -306,7 +303,7 @@ loop:
 			if err == io.EOF {
 				break
 			}
-			return ILLEGAL, "Unexpected error", ""
+			return tokens.ILLEGAL, "Unexpected error", ""
 		}
 		literal.WriteRune(r)
 		if r == '_' {
@@ -330,35 +327,35 @@ out:
 		switch base {
 		case 10:
 			str_convert := str.String()
-			var d decimal
-			err := d.fromString(str_convert)
+			var d strconv.Decimal
+			err := d.FromString(str_convert)
 			if err != nil {
-				return ILLEGAL, err.Error(), ""
+				return tokens.ILLEGAL, err.Error(), ""
 			}
-			bits, _ := d.floatBits()
-			return FLOAT, Float32FromBits(uint32(bits)), literal.String()
+			bits, _ := d.FloatBits()
+			return tokens.FLOAT, strconv.Float32FromBits(uint32(bits)), literal.String()
 		case 16:
-			lex, err := bitsFromHex(str.String(), mantiss, exponent, truncate)
+			lex, err := strconv.BitsFromHex(str.String(), mantiss, exponent, truncate)
 			if err != nil {
-				return ILLEGAL, "unexpeted error", ""
+				return tokens.ILLEGAL, "unexpeted error", ""
 			}
-			return FLOAT, float32(lex), literal.String() // reading Hex
+			return tokens.FLOAT, float32(lex), literal.String() // reading Hex
 		default:
-			return ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
+			return tokens.ILLEGAL, "illegal: p exponent requires hexadecimal mantissa", ""
 		}
 	} else {
 		return l.lexInt(str.String())
 	}
 }
 
-func (l *Lexer) lexInt(s string) (Token, any, string) {
+func (l *Lexer) lexInt(s string) (tokens.TokenType, any, string) {
 	var lexem, base, additional_lexem int64 = 0, 10, 0
 	var literal strings.Builder
 	uncertainBase := false
 	for _, r := range s {
 		str_convert := literal.String()
 		if str_convert == "0_" && (r == 'O' || r == 'o' || r == 'x' || r == 'X' || r == 'b' || r == 'B') {
-			return ILLEGAL, "illegal: _ must separate successive digits", ""
+			return tokens.ILLEGAL, "illegal: _ must separate successive digits", ""
 		}
 		if str_convert == "0" {
 			switch r {
@@ -392,7 +389,7 @@ func (l *Lexer) lexInt(s string) (Token, any, string) {
 		}
 		if r == 'i' {
 			literal.WriteRune(r)
-			return IMAG, intToString(lexem) + "i", literal.String() //TODO
+			return tokens.IMAG, intToString(lexem) + "i", literal.String() //TODO
 		}
 		if RuneInBase(base, r) {
 			literal.WriteRune(r)
@@ -401,7 +398,7 @@ func (l *Lexer) lexInt(s string) (Token, any, string) {
 			}
 			lexem = RuneToInt(r) + lexem*base
 			if lexem > 2147483647 {
-				return ILLEGAL, "illegal: integer value overflow", ""
+				return tokens.ILLEGAL, "illegal: integer value overflow", ""
 			}
 		} else {
 			break
@@ -412,7 +409,7 @@ func (l *Lexer) lexInt(s string) (Token, any, string) {
 		literal.WriteString("0")
 		l.backup()
 	}
-	return INT, int32(lexem), literal.String()
+	return tokens.INT, int32(lexem), literal.String()
 }
 
 func (l *Lexer) lexIdent() string {
@@ -431,35 +428,35 @@ func (l *Lexer) lexIdent() string {
 	}
 }
 
-func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
+func (l *Lexer) lexComment() (token tokens.TokenType, lexem string, literal string) {
 	comment := ""
 	lexem, literal = "", ""
 	for {
 		r, err := l.readNext()
 		if err != nil {
 			if literal == "/" {
-				token = QUO
+				token = tokens.QUO
 			}
 			return
 		}
 		if literal == "/" {
 			if r == '/' || r == '*' {
 				comment = literal + string(r)
-				token = COMMENT
+				token = tokens.COMMENT
 				lexem = ""
 				literal += string(r)
 				continue
 			} else if r == '=' {
-				return QUO_ASSIGN, "/=", "/="
+				return tokens.QUO_ASSIGN, "/=", "/="
 			} else if literal == "/" {
-				token = QUO
+				token = tokens.QUO
 				l.backup()
 				return
 			}
 		}
 		if r == '\n' {
 			if comment == "//" {
-				token = COMMENT
+				token = tokens.COMMENT
 				l.backup()
 				return
 			}
@@ -467,7 +464,7 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 		} else if r == '/' && len(literal) > 0 && literal[len(literal)-1] == '*' && comment == "/*" {
 			literal += string(r)
 			lexem = lexem[:len(lexem)-1]
-			token = COMMENT
+			token = tokens.COMMENT
 			return
 		}
 		literal += string(r)
@@ -475,37 +472,37 @@ func (l *Lexer) lexComment() (token Token, lexem string, literal string) {
 	}
 }
 
-func (l *Lexer) lexPlus() (Token, string, string) {
+func (l *Lexer) lexPlus() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err != nil {
-		return ADD, "+", "+"
+		return tokens.ADD, "+", "+"
 	}
 	if r == '+' {
-		return INC, "++", "++"
+		return tokens.INC, "++", "++"
 	}
 	if r == '=' {
-		return ADD_ASSIGN, "+=", "+="
+		return tokens.ADD_ASSIGN, "+=", "+="
 	}
 	l.backup()
-	return ADD, "+", "+"
+	return tokens.ADD, "+", "+"
 }
 
-func (l *Lexer) lexMinus() (Token, string, string) {
+func (l *Lexer) lexMinus() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err != nil {
-		return SUB, "-", "-"
+		return tokens.SUB, "-", "-"
 	}
 	if r == '-' {
-		return DEC, "--", "--"
+		return tokens.DEC, "--", "--"
 	}
 	if r == '=' {
-		return SUB_ASSIGN, "-=", "-="
+		return tokens.SUB_ASSIGN, "-=", "-="
 	}
 	l.backup()
-	return SUB, "-", "-"
+	return tokens.SUB, "-", "-"
 }
 
-func (l *Lexer) lexEllipsis() (Token, any, string) {
+func (l *Lexer) lexEllipsis() (tokens.TokenType, any, string) {
 	count := 1
 	for {
 		r, err := l.readNext()
@@ -527,107 +524,107 @@ func (l *Lexer) lexEllipsis() (Token, any, string) {
 			break
 		}
 		if count == 3 {
-			return ELLIPSIS, "...", "..."
+			return tokens.ELLIPSIS, "...", "..."
 		}
 	}
-	return PERIOD, ".", "."
+	return tokens.PERIOD, ".", "."
 }
 
-func (l *Lexer) lexAmpersand() (Token, string, string) {
+func (l *Lexer) lexAmpersand() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err != nil {
-		return AND, "&", "&"
+		return tokens.AND, "&", "&"
 	}
 	if r == '&' {
-		return LAND, "&&", "&&"
+		return tokens.LAND, "&&", "&&"
 	}
 	if r == '=' {
-		return AND_ASSIGN, "&=", "&="
+		return tokens.AND_ASSIGN, "&=", "&="
 	}
 	if r == '^' {
 		r, err = l.readNext()
 		if err == nil && r == '=' {
-			return AND_NOT_ASSIGN, "&^=", "&^="
+			return tokens.AND_NOT_ASSIGN, "&^=", "&^="
 		}
 		l.backup()
-		return AND_NOT, "&^", "&^"
+		return tokens.AND_NOT, "&^", "&^"
 	}
 	l.backup()
-	return AND, "&", "&"
+	return tokens.AND, "&", "&"
 }
 
-func (l *Lexer) lexColon() (Token, string, string) {
+func (l *Lexer) lexColon() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err != nil {
-		return OR, "|", "|"
+		return tokens.OR, "|", "|"
 	}
 	if r == '|' {
-		return LOR, "||", "||"
+		return tokens.LOR, "||", "||"
 	}
 	if r == '=' {
-		return OR_ASSIGN, "|=", "|="
+		return tokens.OR_ASSIGN, "|=", "|="
 	}
-	return OR, "|", "|"
+	return tokens.OR, "|", "|"
 }
 
-func (l *Lexer) lexXor() (Token, string, string) {
+func (l *Lexer) lexXor() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err == nil && r == '=' {
-		return XOR_ASSIGN, "^=", "^="
+		return tokens.XOR_ASSIGN, "^=", "^="
 	}
-	return XOR, "^", "^"
+	return tokens.XOR, "^", "^"
 }
 
-func (l *Lexer) lexRem() (Token, string, string) {
+func (l *Lexer) lexRem() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err == nil && r == '=' {
-		return REM_ASSIGN, "%=", "%="
+		return tokens.REM_ASSIGN, "%=", "%="
 	}
-	return REM, "%", "%"
+	return tokens.REM, "%", "%"
 }
 
-func (l *Lexer) lexNot() (Token, string, string) {
+func (l *Lexer) lexNot() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err == nil && r == '=' {
-		return NEQ, "!=", "!="
+		return tokens.NEQ, "!=", "!="
 	}
-	return NOT, "!", "!"
+	return tokens.NOT, "!", "!"
 }
 
-func (l *Lexer) lexArrowR() (Token, string, string) {
+func (l *Lexer) lexArrowR() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err != nil {
-		return GTR, ">", ">"
+		return tokens.GTR, ">", ">"
 	}
 	if r == '>' {
 		r, err = l.readNext()
 		if err == nil && r == '=' {
-			return SHR_ASSIGN, ">>=", ">>="
+			return tokens.SHR_ASSIGN, ">>=", ">>="
 		}
-		return SHR, ">>", ">>"
+		return tokens.SHR, ">>", ">>"
 	} else if r == '=' {
-		return GEQ, ">=", ">="
+		return tokens.GEQ, ">=", ">="
 	}
-	return GTR, ">", ">"
+	return tokens.GTR, ">", ">"
 }
 
-func (l *Lexer) lexArrowL() (Token, string, string) {
+func (l *Lexer) lexArrowL() (tokens.TokenType, string, string) {
 	r, err := l.readNext()
 	if err != nil {
-		return LSS, "<", "<"
+		return tokens.LSS, "<", "<"
 	}
 	if r == '<' {
 		r, err = l.readNext()
 		if err == nil && r == '=' {
-			return SHL_ASSIGN, "<<=", "<<="
+			return tokens.SHL_ASSIGN, "<<=", "<<="
 		}
-		return SHL, "<<", "<<"
+		return tokens.SHL, "<<", "<<"
 	} else if r == '-' {
-		return ARROW, "<-", "<-"
+		return tokens.ARROW, "<-", "<-"
 	} else if r == '=' {
-		return LEQ, "<=", "<="
+		return tokens.LEQ, "<=", "<="
 	}
-	return LSS, "<", "<"
+	return tokens.LSS, "<", "<"
 }
 
 func (l *Lexer) lexCharSymbol() (lexem string, literal string, error string) {
@@ -714,10 +711,10 @@ func (l *Lexer) lexCharSymbol() (lexem string, literal string, error string) {
 	return
 }
 
-func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
+func (l *Lexer) lexChar() (token tokens.TokenType, lexem string, literal string) {
 	lexem, literal, error := l.lexCharSymbol()
 	if len(error) > 0 {
-		return ILLEGAL, error, ""
+		return tokens.ILLEGAL, error, ""
 	}
 	literal = "'" + literal
 	r, err := l.readNext()
@@ -726,15 +723,15 @@ func (l *Lexer) lexChar() (token Token, lexem string, literal string) {
 	}
 	if r == '\'' && len(lexem) > 0 {
 		literal += string(r)
-		return CHAR, lexem, literal
+		return tokens.CHAR, lexem, literal
 	}
 	for i := 0; i < len(literal)-1; i++ {
 		l.backup()
 	}
-	return ILLEGAL, "illegal: rune literal not terminated", ""
+	return tokens.ILLEGAL, "illegal: rune literal not terminated", ""
 }
 
-func (l *Lexer) lexString(isRaw bool) (token Token, lexem string, literal string) {
+func (l *Lexer) lexString(isRaw bool) (token tokens.TokenType, lexem string, literal string) {
 	for {
 		r, err := l.readNext()
 		if err != nil {
@@ -751,12 +748,12 @@ func (l *Lexer) lexString(isRaw bool) (token Token, lexem string, literal string
 				lexem += string(r)
 				continue
 			}
-			return ILLEGAL, "illegal: string literal not terminated", ""
+			return tokens.ILLEGAL, "illegal: string literal not terminated", ""
 		}
 		l.backup()
 		char_lexem, char_literal, error := l.lexCharSymbol()
 		if len(error) > 0 {
-			return ILLEGAL, error, ""
+			return tokens.ILLEGAL, error, ""
 		}
 		lexem += char_lexem
 		literal += char_literal
@@ -766,7 +763,7 @@ func (l *Lexer) lexString(isRaw bool) (token Token, lexem string, literal string
 	} else {
 		literal = "\"" + literal
 	}
-	return STRING, lexem, literal
+	return tokens.STRING, lexem, literal
 }
 func RuneToInt(r rune) int64 {
 	if IsDigit(r) {

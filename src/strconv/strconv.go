@@ -1,11 +1,11 @@
-package lexer
+package strconv
 
 import (
 	"errors"
 	"unsafe"
 )
 
-type decimal struct {
+type Decimal struct {
 	digits     [800]byte
 	length     int
 	pointIndex int
@@ -118,7 +118,7 @@ func prefixIsLessThan(b []byte, s string) bool {
 	return false
 }
 
-func rightShift(d *decimal, k uint) {
+func rightShift(d *Decimal, k uint) {
 	r := 0 // read pointer
 	w := 0 // write pointer
 
@@ -171,7 +171,7 @@ func rightShift(d *decimal, k uint) {
 	trim(d)
 }
 
-func leftShift(d *decimal, k uint) {
+func leftShift(d *Decimal, k uint) {
 	delta := leftcheats[k].delta
 	if prefixIsLessThan(d.digits[0:d.length], leftcheats[k].cutoff) {
 		delta--
@@ -216,7 +216,7 @@ func leftShift(d *decimal, k uint) {
 	trim(d)
 }
 
-func trim(d *decimal) {
+func trim(d *Decimal) {
 	for d.length > 0 && d.digits[d.length-1] == '0' {
 		d.length--
 	}
@@ -225,7 +225,7 @@ func trim(d *decimal) {
 	}
 }
 
-func (d *decimal) Shift(k int) {
+func (d *Decimal) Shift(k int) {
 	switch {
 	case k > 0:
 		for k > maxShift {
@@ -242,7 +242,7 @@ func (d *decimal) Shift(k int) {
 	}
 }
 
-func shouldRoundUp(d *decimal, numberOfDigits int) bool {
+func shouldRoundUp(d *Decimal, numberOfDigits int) bool {
 	if numberOfDigits < 0 || numberOfDigits >= d.length {
 		return false
 	}
@@ -257,7 +257,7 @@ func shouldRoundUp(d *decimal, numberOfDigits int) bool {
 	return d.digits[numberOfDigits] >= '5'
 }
 
-func (d *decimal) RoundedInteger() uint64 {
+func (d *Decimal) RoundedInteger() uint64 {
 	if d.pointIndex > 20 {
 		return 0xFFFFFFFFFFFFFFFF
 	}
@@ -275,7 +275,7 @@ func (d *decimal) RoundedInteger() uint64 {
 	return n
 }
 
-func (d *decimal) fromString(s string) error {
+func (d *Decimal) FromString(s string) error {
 	i := 0
 	for ; i < len(s); i++ {
 		switch {
@@ -332,7 +332,7 @@ func (d *decimal) fromString(s string) error {
 	return nil
 }
 
-func (d *decimal) floatBits() (b uint64, overflow bool) {
+func (d *Decimal) FloatBits() (b uint64, overflow bool) {
 	var exp int
 	var mant uint64
 
@@ -422,7 +422,7 @@ out:
 	return bits, overflow
 }
 
-func bitsFromHex(s string, mantissa uint64, exponent int, truncate bool) (float64, error) {
+func BitsFromHex(s string, mantissa uint64, exponent int, truncate bool) (float64, error) {
 
 	maxExp := 1<<exponentBits + bias - 2
 	minExp := bias + 1
@@ -473,3 +473,22 @@ func bitsFromHex(s string, mantissa uint64, exponent int, truncate bool) (float6
 }
 
 func Float32FromBits(b uint32) float32 { return *(*float32)(unsafe.Pointer(&b)) }
+
+func RuneInBase(base int64, r rune) bool {
+	return (base == 2 && IsBinary(r)) || (base == 8 && IsOctal(r)) || (base == 10 && IsDigit(r)) || (base == 16 && IsHex(r))
+}
+func IsDigit(r rune) bool {
+	return r >= '0' && r <= '9'
+}
+
+func IsHex(r rune) bool {
+	return IsDigit(r) || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+}
+
+func IsBinary(r rune) bool {
+	return r == '0' || r == '1'
+}
+
+func IsOctal(r rune) bool {
+	return r >= '0' && r <= '7'
+}
