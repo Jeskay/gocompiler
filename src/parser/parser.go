@@ -54,8 +54,11 @@ func (p *Parser) parseIdent() (node Ident) {
 	return
 }
 
-func (p *Parser) parsePrimaryExpression() (node Node) {
-	return p.parseOperand()
+func (p *Parser) parsePrimaryExpression(expr Expression) (node Node) {
+	if expr == nil {
+		return p.parseOperand()
+	}
+	return expr
 }
 
 func (p *Parser) parseOperand() (node Node) {
@@ -67,9 +70,10 @@ func (p *Parser) parseOperand() (node Node) {
 		node = p.parseExpression()
 		p.expect(tokens.RPAREN)
 		return
-	default:
+	case tokens.INT, tokens.FLOAT, tokens.STRING, tokens.CHAR:
 		return p.parseLiteral()
 	}
+	return nil
 }
 
 func (p *Parser) parseUnaryExpression() (node Node) {
@@ -79,67 +83,31 @@ func (p *Parser) parseUnaryExpression() (node Node) {
 		p.next()
 		return UnaryExpression{Pos: op.Pos, Operator: op.Tok, X: p.parseExpression()}
 	default:
-		return p.parsePrimaryExpression()
+		return p.parsePrimaryExpression(nil)
 	}
 }
 
-func (p *Parser) parseOrExpression() (node Node) {
-	node = p.parseAndExpression()
-	for p.token.Tok == tokens.OR {
-		operand := p.token
-		p.next()
-		right := p.parseAndExpression()
-		node = BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: node, RightX: right}
-	}
-	return
-}
+func (p *Parser) parseBinaryExpression(expr Expression, prec tokens.TokenType) (node Node) {
 
-func (p *Parser) parseAndExpression() (node Node) {
-	node = p.parseComparisonExpression()
-	for p.token.Tok == tokens.AND {
-		operand := p.token
-		p.next()
-		right := p.parseComparisonExpression()
-		node = BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: node, RightX: right}
+	if expr == nil {
+		expr = p.parseUnaryExpression()
 	}
-	return
-}
 
-func (p *Parser) parseComparisonExpression() (node Node) {
-	node = p.parseAddExpression()
-	for p.token.Tok == tokens.EQL {
+	for {
 		operand := p.token
+		if operand.Tok < prec || operand.Tok > tokens.ELLIPSIS {
+			break
+		}
 		p.next()
-		right := p.parseAddExpression()
-		node = BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: node, RightX: right}
-	}
-	return
-}
 
-func (p *Parser) parseAddExpression() (node Node) {
-	node = p.parseMulExpression()
-	for p.token.Tok == tokens.ADD || p.token.Tok == tokens.SUB {
-		operand := p.token
-		p.next()
-		right := p.parseMulExpression()
-		node = BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: node, RightX: right}
+		right := p.parseBinaryExpression(nil, operand.Tok+1)
+		expr = BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: expr, RightX: right}
 	}
-	return
-}
-
-func (p *Parser) parseMulExpression() (node Node) {
-	node = p.parseUnaryExpression()
-	for p.token.Tok == tokens.MUL || p.token.Tok == tokens.QUO {
-		operand := p.token
-		p.next()
-		right := p.parseUnaryExpression()
-		node = BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: node, RightX: right}
-	}
-	return
+	return expr
 }
 
 func (p *Parser) parseExpression() (node Node) {
-	return p.parseOrExpression()
+	return p.parseBinaryExpression(nil, tokens.ADD)
 }
 
 func (p *Parser) expect(tok tokens.TokenType) {
