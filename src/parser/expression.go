@@ -3,17 +3,26 @@ package parser
 import "gocompiler/src/tokens"
 
 type Node interface {
-	Calc()
 }
 
 type Expression interface {
 	Node
-	Calc()
+	exprNode()
 }
 
 type Statement interface {
 	Node
 	stmtNode()
+}
+
+type Spec interface {
+	Node
+	specNode()
+}
+
+type Declaration interface {
+	Node
+	declNode()
 }
 
 // Field is a field declaration in a struct type
@@ -44,6 +53,32 @@ func (f *FieldList) NumFields() int {
 	return n
 }
 
+// spec nodes
+
+type (
+	ValueSpec struct {
+		Names  []*Ident
+		Type   Expression
+		Values []Expression
+	}
+
+	TypeSpec struct {
+		Name       *Ident
+		TypeParams *FieldList
+		AssignPos  tokens.Position
+		Type       Expression
+	}
+)
+
+// declaration nodes
+type (
+	FunctionDeclaration struct {
+		Name *Ident
+		Type *FunctionType
+		Body *BlockStatement
+	}
+)
+
 // expression nodes
 type (
 	Ident struct {
@@ -64,7 +99,7 @@ type (
 	}
 
 	FuncLiteral struct {
-		Type *FuncType
+		Type *FunctionType
 		Body *BlockStatement
 	}
 
@@ -104,7 +139,7 @@ type (
 
 // type-specific expression nodes
 type (
-	FuncType struct {
+	FunctionType struct {
 		Pos        tokens.Position
 		TypeParams *FieldList
 		Params     *FieldList
@@ -119,7 +154,7 @@ type (
 
 	StructType struct {
 		Pos        tokens.Position
-		Fields     *FieldList
+		Fields     []*Field
 		Incomplete bool
 	}
 )
@@ -131,24 +166,63 @@ type (
 		List      []Statement
 		RbracePos tokens.Position
 	}
+
+	ReturnStatement struct {
+		Return  tokens.Position
+		Results []Expression
+	}
+
+	IfStatement struct {
+		Pos  tokens.Position
+		Init Statement
+		Cond Expression
+		Body *BlockStatement
+		Else Statement
+	}
+
+	ForStatement struct {
+		Pos  tokens.Position
+		Init Statement  // initialization statement; or nil
+		Cond Expression // condition; or nil
+		Post Statement  // post iteration statement; or nil
+		Body *BlockStatement
+	}
+
+	AssignStatement struct {
+		Lhs    []Expression
+		TokPos tokens.Position // position of Tok
+		Tok    tokens.Token    // assignment token, DEFINE
+		Rhs    []Expression
+	}
+
+	IncDecStatement struct {
+		X   Expression
+		Pos tokens.Position // position of Tok
+		Tok tokens.Token    // INC or DEC
+	}
+
+	ExpressionStatement struct {
+		X Expression
+	}
 )
 
-func Calc(n Node) {
+func (*Ident) exprNode()            {}
+func (*BasicLiteral) exprNode()     {}
+func (*UnaryExpression) exprNode()  {}
+func (*BinaryExpression) exprNode() {}
+func (*ArrayType) exprNode()        {}
+func (*StructType) exprNode()       {}
+func (*FunctionType) exprNode()     {}
 
-}
+func (*BlockStatement) stmtNode()      {}
+func (*ReturnStatement) stmtNode()     {}
+func (*IfStatement) stmtNode()         {}
+func (*ForStatement) stmtNode()        {}
+func (*AssignStatement) stmtNode()     {}
+func (*IncDecStatement) stmtNode()     {}
+func (*ExpressionStatement) stmtNode() {}
 
-func (n BasicLiteral) Calc() {
+func (*ValueSpec) specNode() {}
+func (*TypeSpec) specNode()  {}
 
-}
-
-func (n UnaryExpression) Calc() {
-
-}
-
-func (n BinaryExpression) Calc() {
-
-}
-
-func (n Ident) Calc() {
-
-}
+func (*FunctionDeclaration) declNode() {}
