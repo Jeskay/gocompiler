@@ -2,8 +2,7 @@ package parser
 
 import "gocompiler/src/tokens"
 
-type Node interface {
-}
+type Node interface{}
 
 type Expression interface {
 	Node

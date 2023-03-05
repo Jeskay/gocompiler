@@ -61,8 +61,29 @@ func main() {
 		parserInstance := parser.NewParser(tokenList)
 		astTree := parserInstance.Parse()
 		for _, node := range astTree {
-			s, _ := json.MarshalIndent(node, "", "\t")
-			fmt.Println(s)
+			var s []byte
+			var _ error
+			switch expr := interface{}(node).(type) {
+			case parser.BinaryExpression:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			case parser.Ident:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			case parser.BasicLiteral:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			case *parser.UnaryExpression:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			case *parser.BlockStatement:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			case parser.Field:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			case *parser.FunctionDeclaration:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			case *parser.FunctionType:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			default:
+				s, _ = json.MarshalIndent(expr, "", "\t")
+			}
+			fmt.Println(string(s))
 		}
 	}
 }
