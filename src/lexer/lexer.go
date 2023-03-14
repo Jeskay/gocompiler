@@ -106,6 +106,7 @@ func (l *Lexer) Lex() (tokens.Position, tokens.TokenType, any, string) {
 			if err == nil && r2 == '=' {
 				return startPos, tokens.MUL_ASSIGN, "*=", "*="
 			}
+			l.backup()
 			return startPos, tokens.MUL, "*", string(r)
 		case '/':
 			startPos := l.position

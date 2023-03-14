@@ -1,0 +1,7 @@
+func greeting(name string) (greet string, farawell string) {
+    return "Hello " + name, "Goodbye " + name
+}
+
+func main() {
+    fmt.printf(greeting("Jhon"))
+}

@@ -1,0 +1,4 @@
+func main() {
+    var arr []int
+    arr[10] = 1;
+}

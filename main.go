@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	lexer "gocompiler/src/lexer"
@@ -60,30 +59,7 @@ func main() {
 		}
 		parserInstance := parser.NewParser(tokenList)
 		astTree := parserInstance.Parse()
-		for _, node := range astTree {
-			var s []byte
-			var _ error
-			switch expr := interface{}(node).(type) {
-			case parser.BinaryExpression:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			case parser.Ident:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			case parser.BasicLiteral:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			case *parser.UnaryExpression:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			case *parser.BlockStatement:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			case parser.Field:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			case *parser.FunctionDeclaration:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			case *parser.FunctionType:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			default:
-				s, _ = json.MarshalIndent(expr, "", "\t")
-			}
-			fmt.Println(string(s))
-		}
+		str := parser.PrintAST(astTree)
+		fmt.Println(str)
 	}
 }

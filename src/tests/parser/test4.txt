@@ -1,0 +1,6 @@
+type Animal struct {
+    Name string
+    legs int
+    weight float
+    tail bool
+}

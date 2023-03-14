@@ -1,8 +1,14 @@
 package parser
 
-import "gocompiler/src/tokens"
+import (
+	tokens "gocompiler/src/tokens"
 
-type Node interface{}
+	treePrinter "github.com/xlab/treeprint"
+)
+
+type Node interface {
+	printNode(tree treePrinter.Tree)
+}
 
 type Expression interface {
 	Node
@@ -76,6 +82,14 @@ type (
 		Type *FunctionType
 		Body *BlockStatement
 	}
+
+	GenericDeclaration struct {
+		Token     tokens.TokenType
+		Pos       tokens.Position
+		LParenPos tokens.Position
+		RParenPos tokens.Position
+		Specs     []Spec
+	}
 )
 
 // expression nodes
@@ -117,8 +131,8 @@ type (
 
 	IndexExpressions struct {
 		X       Expression
-		Lbrace  tokens.Position
-		Rbrace  tokens.Position
+		Lbrack  tokens.Position
+		Rbrack  tokens.Position
 		Indices []Expression
 	}
 
@@ -133,6 +147,25 @@ type (
 		Operator tokens.TokenType
 		LeftX    Expression
 		RightX   Expression
+	}
+
+	SelectorExpression struct {
+		X        Expression
+		Selector *Ident
+	}
+
+	CallExpression struct {
+		Function  Expression
+		LParenPos tokens.Position
+		Arguments []Expression
+		RParenPos tokens.Position
+	}
+
+	IndexExpression struct {
+		X           Expression
+		LBracketPos tokens.Position
+		RBracketPos tokens.Position
+		Index       Expression
 	}
 )
 
@@ -203,25 +236,35 @@ type (
 	ExpressionStatement struct {
 		X Expression
 	}
+
+	DeclarationStatement struct {
+		Decl Declaration
+	}
 )
 
-func (*Ident) exprNode()            {}
-func (*BasicLiteral) exprNode()     {}
-func (*UnaryExpression) exprNode()  {}
-func (*BinaryExpression) exprNode() {}
-func (*ArrayType) exprNode()        {}
-func (*StructType) exprNode()       {}
-func (*FunctionType) exprNode()     {}
+func (*Ident) exprNode()              {}
+func (*BasicLiteral) exprNode()       {}
+func (*UnaryExpression) exprNode()    {}
+func (*BinaryExpression) exprNode()   {}
+func (*ArrayType) exprNode()          {}
+func (*StructType) exprNode()         {}
+func (*FunctionType) exprNode()       {}
+func (*SelectorExpression) exprNode() {}
+func (*CallExpression) exprNode()     {}
+func (*IndexExpression) exprNode()    {}
+func (*IndexExpressions) exprNode()   {}
 
-func (*BlockStatement) stmtNode()      {}
-func (*ReturnStatement) stmtNode()     {}
-func (*IfStatement) stmtNode()         {}
-func (*ForStatement) stmtNode()        {}
-func (*AssignStatement) stmtNode()     {}
-func (*IncDecStatement) stmtNode()     {}
-func (*ExpressionStatement) stmtNode() {}
+func (*BlockStatement) stmtNode()       {}
+func (*ReturnStatement) stmtNode()      {}
+func (*IfStatement) stmtNode()          {}
+func (*ForStatement) stmtNode()         {}
+func (*AssignStatement) stmtNode()      {}
+func (*IncDecStatement) stmtNode()      {}
+func (*ExpressionStatement) stmtNode()  {}
+func (*DeclarationStatement) stmtNode() {}
 
 func (*ValueSpec) specNode() {}
 func (*TypeSpec) specNode()  {}
 
 func (*FunctionDeclaration) declNode() {}
+func (*GenericDeclaration) declNode()  {}

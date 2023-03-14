@@ -10,7 +10,11 @@ type Token struct {
 }
 
 func (l *Token) ToString() string {
-	return fmt.Sprintf("%d:%d\t%s\t%s\t%s\n", l.Pos.Line, l.Pos.Column, l.Tok, l.Lex, l.Lit)
+	return fmt.Sprintf("%d:%d\t%s\t%v\t%s\n", l.Pos.Line, l.Pos.Column, l.Tok, l.Lex, l.Lit)
+}
+
+func (l *Token) LexString() string {
+	return fmt.Sprintf("%v", l.Lex)
 }
 
 type Position struct {
