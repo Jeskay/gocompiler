@@ -40,16 +40,20 @@ func performTest(t *testing.T, input string, expect string) {
 	}
 }
 
-func testPath(path string) string {
-	return "../tests/parser/input/" + path + "/test"
+func testPath(path string, input bool) string {
+	if input {
+		return "../tests/parser/input/" + path + "/test"
+	} else {
+		return "../tests/parser/output/" + path + "/test"
+	}
 }
 
 func TestFunctions(t *testing.T) {
 	const testAmount = 4
 	const path = "functions"
 	for i := 1; i <= testAmount; i++ {
-		input := readInput(testPath(path) + fmt.Sprint(i) + ".txt")
-		expected := readInput(testPath(path) + fmt.Sprint(i) + ".txt")
+		input := readInput(testPath(path, true) + fmt.Sprint(i) + ".txt")
+		expected := readInput(testPath(path, false) + fmt.Sprint(i) + ".txt")
 		performTest(t, input, expected)
 	}
 }
@@ -63,8 +67,8 @@ func TestStructs(t *testing.T) {
 	const path = "structs"
 
 	for i := 1; i <= testAmount; i++ {
-		input := readInput(testPath(path) + fmt.Sprint(i) + ".txt")
-		expected := readInput(testPath(path) + fmt.Sprint(i) + ".txt")
+		input := readInput(testPath(path, true) + fmt.Sprint(i) + ".txt")
+		expected := readInput(testPath(path, false) + fmt.Sprint(i) + ".txt")
 		performTest(t, input, expected)
 	}
 }

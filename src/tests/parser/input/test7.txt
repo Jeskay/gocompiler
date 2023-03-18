@@ -1,3 +1,0 @@
-func sqaure(a, b, c int) int {
-    return a*a + 2*b + c
-}
