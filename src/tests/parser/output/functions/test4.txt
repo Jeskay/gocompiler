@@ -1,0 +1,45 @@
+.
+└── greeting
+    ├── body
+    │   └── return
+    │       ├── +
+    │       │   ├── STRING Hello 
+    │       │   └── name
+    │       └── +
+    │           ├── STRING Goodbye 
+    │           └── name
+    └── type
+        ├── params
+        │   └── field
+        │       ├── names
+        │       │   └── name
+        │       └── type
+        │           └── string
+        └── results
+            ├── field
+            │   ├── names
+            │   │   └── greet
+            │   └── type
+            │       └── string
+            └── field
+                ├── names
+                │   └── farawell
+                └── type
+                    └── string
+.
+└── main
+    ├── body
+    │   └── method
+    │       ├── selector
+    │       │   ├── name
+    │       │   │   └── printf
+    │       │   └── method
+    │       │       └── fmt
+    │       └── args
+    │           └── method
+    │               ├── greeting
+    │               └── args
+    │                   └── STRING Jhon
+    └── type
+        ├── params
+        └── results

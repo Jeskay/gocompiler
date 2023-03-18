@@ -1,0 +1,27 @@
+.
+└── main
+    ├── body
+    │   └── =
+    │       ├── worker
+    │       └── composite_literal
+    │           ├── type
+    │           │   └── Worker
+    │           └── elements
+    │               ├── key_value
+    │               │   ├── key
+    │               │   │   └── Name
+    │               │   └── value
+    │               │       └── STRING Boris
+    │               ├── key_value
+    │               │   ├── key
+    │               │   │   └── Surname
+    │               │   └── value
+    │               │       └── STRING Jhonson
+    │               └── key_value
+    │                   ├── key
+    │                   │   └── age
+    │                   └── value
+    │                       └── INT 50
+    └── type
+        ├── params
+        └── results

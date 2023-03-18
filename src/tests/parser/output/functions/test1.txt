@@ -1,0 +1,10 @@
+.
+└── main
+    ├── body
+    │   └── method
+    │       ├── printf
+    │       └── args
+    │           └── STRING Hello world
+    └── type
+        ├── params
+        └── results

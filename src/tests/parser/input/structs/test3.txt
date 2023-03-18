@@ -1,0 +1,3 @@
+func main() {
+    worker = Worker{Name: "Boris", Surname: "Jhonson", age: 50}
+}

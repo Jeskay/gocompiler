@@ -1,0 +1,13 @@
+type Animal struct {
+    Name string
+    legs int
+    weight float
+    tail bool
+}
+
+type Worker struct {
+    Name, Surname string
+    age int
+    titles [10]string
+    Job Work
+}

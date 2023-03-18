@@ -21,7 +21,7 @@ func (i *Ident) printNode(tree treePrinter.Tree) {
 }
 
 func (b *BasicLiteral) printNode(tree treePrinter.Tree) {
-	tree.AddNode(b.Value.LexString())
+	tree.AddNode(b.Type.String() + " " + b.Value.LexString())
 }
 
 func (b *BinaryExpression) printNode(tree treePrinter.Tree) {
@@ -74,20 +74,22 @@ func (n *Field) printNode(tree treePrinter.Tree) {
 	if n.Type == nil {
 		return
 	}
+	t := tree.AddBranch("field")
 	if len(n.Names) > 0 {
-		names := tree.AddBranch("names")
+		names := t.AddBranch("names")
 		for _, name := range n.Names {
 			name.printNode(names)
 		}
 	}
-	typ := tree.AddBranch("type")
+	typ := t.AddBranch("type")
 
 	n.Type.printNode(typ)
 }
 
 func (n *ArrayType) printNode(tree treePrinter.Tree) {
-	length := tree.AddBranch("length")
-	typ := tree.AddBranch("type")
+	t := tree.AddBranch("array")
+	length := t.AddBranch("length")
+	typ := t.AddBranch("type")
 	n.Len.printNode(length)
 	n.ElementType.printNode(typ)
 }
@@ -106,7 +108,9 @@ func (n *ValueSpec) printNode(tree treePrinter.Tree) {
 	for _, name := range n.Names {
 		name.printNode(names)
 	}
-	n.Type.printNode(typ)
+	if n.Type != nil {
+		n.Type.printNode(typ)
+	}
 	for _, value := range n.Values {
 		value.printNode(values)
 	}
@@ -186,7 +190,7 @@ func (n *SelectorExpression) printNode(tree treePrinter.Tree) {
 }
 
 func (n *CallExpression) printNode(tree treePrinter.Tree) {
-	fun := tree.AddBranch("func")
+	fun := tree.AddBranch("method")
 	n.Function.printNode(fun)
 	args := fun.AddBranch("args")
 	for _, arg := range n.Arguments {
@@ -219,4 +223,19 @@ func (n *IndexExpressions) printNode(tree treePrinter.Tree) {
 	for _, arg := range n.Indices {
 		arg.printNode(indicies)
 	}
+}
+
+func (n *CompositeLiteral) printNode(tree treePrinter.Tree) {
+	t := tree.AddBranch("composite_literal")
+	n.Type.printNode(t.AddBranch("type"))
+	elems := t.AddBranch("elements")
+	for _, elem := range n.Elements {
+		elem.printNode(elems)
+	}
+}
+
+func (n *KeyValueExpression) printNode(tree treePrinter.Tree) {
+	t := tree.AddBranch("key_value")
+	n.Key.printNode(t.AddBranch("key"))
+	n.Value.printNode(t.AddBranch("value"))
 }

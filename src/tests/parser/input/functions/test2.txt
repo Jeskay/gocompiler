@@ -1,0 +1,3 @@
+func calcualte(a, b float, c int) (result float, ok bool) {
+    return sqrt(a) + b*2 - c, true
+}

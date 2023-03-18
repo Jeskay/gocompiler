@@ -1,0 +1,9 @@
+func main() {
+    var worker = struct {
+        Name, Surname string
+        age int
+        titles [10]string
+        Job Work
+    }{Name: "Jhon", Surname: "White", age: 10}
+    fmt.printf(worker.Name, worker.Surname)
+}

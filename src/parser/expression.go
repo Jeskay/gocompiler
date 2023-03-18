@@ -116,7 +116,7 @@ type (
 		Body *BlockStatement
 	}
 
-	CompositeLitral struct {
+	CompositeLiteral struct {
 		Type       Expression
 		LbracePos  tokens.Position
 		RbracePos  tokens.Position
@@ -166,6 +166,12 @@ type (
 		LBracketPos tokens.Position
 		RBracketPos tokens.Position
 		Index       Expression
+	}
+
+	KeyValueExpression struct {
+		Key      Expression
+		ColonPos tokens.Position
+		Value    Expression
 	}
 )
 
@@ -253,6 +259,8 @@ func (*SelectorExpression) exprNode() {}
 func (*CallExpression) exprNode()     {}
 func (*IndexExpression) exprNode()    {}
 func (*IndexExpressions) exprNode()   {}
+func (*CompositeLiteral) exprNode()   {}
+func (*KeyValueExpression) exprNode() {}
 
 func (*BlockStatement) stmtNode()       {}
 func (*ReturnStatement) stmtNode()      {}

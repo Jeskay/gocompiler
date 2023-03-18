@@ -1,0 +1,59 @@
+.
+└── type
+    └── spec
+        ├── name
+        │   └── Animal
+        └── type
+            └── struct
+                ├── field
+                │   ├── names
+                │   │   └── Name
+                │   └── type
+                │       └── string
+                ├── field
+                │   ├── names
+                │   │   └── legs
+                │   └── type
+                │       └── int
+                ├── field
+                │   ├── names
+                │   │   └── weight
+                │   └── type
+                │       └── float
+                └── field
+                    ├── names
+                    │   └── tail
+                    └── type
+                        └── bool
+.
+└── type
+    └── spec
+        ├── name
+        │   └── Worker
+        └── type
+            └── struct
+                ├── field
+                │   ├── names
+                │   │   ├── Name
+                │   │   └── Surname
+                │   └── type
+                │       └── string
+                ├── field
+                │   ├── names
+                │   │   └── age
+                │   └── type
+                │       └── int
+                ├── field
+                │   ├── names
+                │   │   └── titles
+                │   └── type
+                │       └── array
+                │           ├── length
+                │           │   └── INT 10
+                │           └── type
+                │               └── string
+                └── field
+                    ├── names
+                    │   └── Job
+                    └── type
+                        └── Work

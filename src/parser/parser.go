@@ -154,16 +154,6 @@ func (p *Parser) parseType() Expression {
 	}
 }
 
-func (p *Parser) parseTypeArgs() []Expression {
-	p.expect(tokens.LBRACK)
-	var list []Expression
-	list = append(list, p.parseType())
-	for p.token.Tok == tokens.COMMA {
-		list = append(list, p.parseType())
-	}
-	p.expect(tokens.RBRACK)
-	return list
-}
 func (p *Parser) parseCall(function Expression) *CallExpression {
 	lpos := p.expect(tokens.LPAREN).Pos
 	var list []Expression
@@ -176,6 +166,44 @@ func (p *Parser) parseCall(function Expression) *CallExpression {
 	}
 	rpos := p.expect(tokens.RPAREN).Pos
 	return &CallExpression{Function: function, LParenPos: lpos, RParenPos: rpos, Arguments: list}
+}
+
+func (p *Parser) parseValue() Expression {
+	if p.token.Tok == tokens.LBRACE {
+		return p.parseLiteralValue(nil)
+	}
+	return p.parseExpression()
+}
+
+func (p *Parser) parseElement() Expression {
+	key := p.parseValue()
+	if p.token.Tok == tokens.COLON {
+		colon := p.token.Pos
+		p.next()
+		key = &KeyValueExpression{Key: key, ColonPos: colon, Value: p.parseValue()}
+	}
+	return key
+}
+
+func (p *Parser) parseElementList() (list []Expression) {
+	for p.token.Tok != tokens.RBRACE && p.token.Tok != tokens.EOF {
+		list = append(list, p.parseElement())
+		if p.token.Tok == tokens.RBRACE && p.token.Tok != tokens.EOF {
+			break
+		}
+		p.next()
+	}
+	return
+}
+
+func (p *Parser) parseLiteralValue(typ Expression) Expression {
+	lpos := p.expect(tokens.LBRACE).Pos
+	var elements []Expression
+	if p.token.Tok != tokens.RBRACE {
+		elements = p.parseElementList()
+	}
+	rpos := p.expect(tokens.RBRACE).Pos
+	return &CompositeLiteral{Type: typ, LbracePos: lpos, RbracePos: rpos, Elements: elements}
 }
 
 func (p *Parser) parsePrimaryExpression(expr Expression) (node Expression) {
@@ -198,6 +226,15 @@ func (p *Parser) parsePrimaryExpression(expr Expression) (node Expression) {
 			expr = p.parseCall(expr)
 		case tokens.LBRACK:
 			expr = p.parseIndexOrInstance(expr)
+		case tokens.LBRACE:
+			switch expr.(type) {
+			case *ArrayType, *StructType:
+				expr = p.parseLiteralValue(expr)
+			case *Ident, *SelectorExpression:
+				expr = p.parseLiteralValue(expr)
+			default:
+				return expr
+			}
 		default:
 			return expr
 		}
@@ -285,7 +322,10 @@ func (p *Parser) parseOperand() (node Expression) {
 		return p.parseLiteral()
 	case tokens.FUNC:
 		return p.parseFunctionType()
+	case tokens.STRUCT:
+		return p.parseStructType()
 	}
+
 	return nil
 }
 
@@ -299,6 +339,8 @@ func (p *Parser) parseStatement() Statement {
 		return p.parseReturnStatement()
 	case tokens.CONST, tokens.VAR, tokens.TYPE:
 		return &DeclarationStatement{Decl: p.parseGenericDeclaration(p.token.Tok)}
+	case tokens.LBRACE:
+		return p.parseBlockStatement()
 	default:
 		return p.parseSimpleStatement()
 	}
@@ -504,8 +546,4 @@ func (p *Parser) expect(tok tokens.TokenType) tokens.Token {
 	node := p.token
 	p.next()
 	return node
-}
-
-func (p *Parser) atComma(tok tokens.TokenType) {
-
 }

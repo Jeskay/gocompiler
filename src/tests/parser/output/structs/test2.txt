@@ -1,0 +1,73 @@
+.
+└── main
+    ├── body
+    │   ├── declaration
+    │   │   └── var
+    │   │       ├── names
+    │   │       │   └── worker
+    │   │       ├── type
+    │   │       └── values
+    │   │           └── composite_literal
+    │   │               ├── type
+    │   │               │   └── struct
+    │   │               │       ├── field
+    │   │               │       │   ├── names
+    │   │               │       │   │   ├── Name
+    │   │               │       │   │   └── Surname
+    │   │               │       │   └── type
+    │   │               │       │       └── string
+    │   │               │       ├── field
+    │   │               │       │   ├── names
+    │   │               │       │   │   └── age
+    │   │               │       │   └── type
+    │   │               │       │       └── int
+    │   │               │       ├── field
+    │   │               │       │   ├── names
+    │   │               │       │   │   └── titles
+    │   │               │       │   └── type
+    │   │               │       │       └── array
+    │   │               │       │           ├── length
+    │   │               │       │           │   └── INT 10
+    │   │               │       │           └── type
+    │   │               │       │               └── string
+    │   │               │       └── field
+    │   │               │           ├── names
+    │   │               │           │   └── Job
+    │   │               │           └── type
+    │   │               │               └── Work
+    │   │               └── elements
+    │   │                   ├── key_value
+    │   │                   │   ├── key
+    │   │                   │   │   └── Name
+    │   │                   │   └── value
+    │   │                   │       └── STRING Jhon
+    │   │                   ├── key_value
+    │   │                   │   ├── key
+    │   │                   │   │   └── Surname
+    │   │                   │   └── value
+    │   │                   │       └── STRING White
+    │   │                   └── key_value
+    │   │                       ├── key
+    │   │                       │   └── age
+    │   │                       └── value
+    │   │                           └── INT 10
+    │   └── method
+    │       ├── selector
+    │       │   ├── name
+    │       │   │   └── printf
+    │       │   └── method
+    │       │       └── fmt
+    │       └── args
+    │           ├── selector
+    │           │   ├── name
+    │           │   │   └── Name
+    │           │   └── method
+    │           │       └── worker
+    │           └── selector
+    │               ├── name
+    │               │   └── Surname
+    │               └── method
+    │                   └── worker
+    └── type
+        ├── params
+        └── results
