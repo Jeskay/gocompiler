@@ -173,6 +173,11 @@ type (
 		ColonPos tokens.Position
 		Value    Expression
 	}
+
+	BadExpression struct {
+		From tokens.Position
+		To   tokens.Position
+	}
 )
 
 // type-specific expression nodes
@@ -262,6 +267,7 @@ func (*IndexExpressions) exprNode()   {}
 func (*CompositeLiteral) exprNode()   {}
 func (*KeyValueExpression) exprNode() {}
 func (*FunctionLiteral) exprNode()    {}
+func (*BadExpression) exprNode()      {}
 
 func (*BlockStatement) stmtNode()       {}
 func (*ReturnStatement) stmtNode()      {}

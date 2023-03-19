@@ -78,3 +78,7 @@ func TestArrays(t *testing.T) {
 func TestIfStatements(t *testing.T) {
 	runTestFolder(t, "if_statements", 2)
 }
+
+func TestForStatements(t *testing.T) {
+	runTestFolder(t, "for_statements", 5)
+}

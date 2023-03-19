@@ -27,7 +27,9 @@ func (b *BasicLiteral) printNode(tree treePrinter.Tree) {
 func (b *BinaryExpression) printNode(tree treePrinter.Tree) {
 	t := tree.AddBranch(b.Operator.String())
 	b.LeftX.printNode(t)
-	b.RightX.printNode(t)
+	if b.RightX != nil {
+		b.RightX.printNode(t)
+	}
 }
 
 func (u *UnaryExpression) printNode(tree treePrinter.Tree) {
@@ -248,4 +250,8 @@ func (n *FunctionLiteral) printNode(tree treePrinter.Tree) {
 	t := tree.AddBranch("func")
 	n.Type.printNode(t.AddBranch("type"))
 	n.Body.printNode(t.AddBranch("body"))
+}
+
+func (n *BadExpression) printNode(tree treePrinter.Tree) {
+	tree.AddNode("bad_expression")
 }

@@ -1,0 +1,7 @@
+func main() {
+    for count := 0 ; count < 10 ; {
+        fmt.printf("counting" + count + ",")
+        count++
+    }
+    fmt.printf("Finish")
+}

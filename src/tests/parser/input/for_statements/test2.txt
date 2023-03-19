@@ -1,0 +1,8 @@
+func main() {
+    var count int = 0
+    for count < 10 {
+        fmt.printf("counting" + count + ",")
+        count++
+    }
+    fmt.printf("Finish")
+}

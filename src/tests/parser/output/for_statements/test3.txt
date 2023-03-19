@@ -1,0 +1,41 @@
+.
+└── main
+    ├── body
+    │   ├── for
+    │   │   ├── init
+    │   │   │   └── :=
+    │   │   │       ├── left
+    │   │   │       │   └── count
+    │   │   │       └── right
+    │   │   │           └── INT 0
+    │   │   ├── condition
+    │   │   │   └── <
+    │   │   │       ├── count
+    │   │   │       └── INT 10
+    │   │   └── body
+    │   │       ├── method
+    │   │       │   ├── selector
+    │   │       │   │   ├── name
+    │   │       │   │   │   └── printf
+    │   │       │   │   └── method
+    │   │       │   │       └── fmt
+    │   │       │   └── args
+    │   │       │       └── +
+    │   │       │           ├── +
+    │   │       │           │   ├── STRING counting
+    │   │       │           │   └── count
+    │   │       │           └── STRING ,
+    │   │       └── ++
+    │   │           └── count
+    │   └── method
+    │       ├── selector
+    │       │   ├── name
+    │       │   │   └── printf
+    │       │   └── method
+    │       │       └── fmt
+    │       └── args
+    │           └── STRING Finish
+    └── type
+        └── func_type
+            ├── params
+            └── results

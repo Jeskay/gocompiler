@@ -399,9 +399,26 @@ func (p *Parser) parseIfStatement() *IfStatement {
 
 func (p *Parser) parseForStatement() *ForStatement {
 	pos := p.expect(tokens.FOR).Pos
-	exp := p.parseExpression()
+	var stmt1, stmt2, stmt3 Statement
+	if p.token.Tok != tokens.LBRACE {
+		if p.token.Tok != tokens.SEMICOLON {
+			stmt2 = p.parseSimpleStatement()
+		}
+		if p.token.Tok == tokens.SEMICOLON {
+			p.next()
+			stmt1 = stmt2
+			stmt2 = nil
+			if p.token.Tok != tokens.SEMICOLON {
+				stmt2 = p.parseSimpleStatement()
+			}
+			p.optionalSemi()
+			if p.token.Tok != tokens.LBRACE {
+				stmt3 = p.parseSimpleStatement()
+			}
+		}
+	}
 	body := p.parseBlockStatement()
-	return &ForStatement{Pos: pos, Init: nil, Cond: exp, Post: nil, Body: body}
+	return &ForStatement{Pos: pos, Init: stmt1, Cond: p.toExpr(stmt2, "boolean expression"), Post: stmt3, Body: body}
 }
 
 func (p *Parser) parseReturnStatement() *ReturnStatement {
@@ -558,4 +575,29 @@ func (p *Parser) expect(tok tokens.TokenType) tokens.Token {
 	node := p.token
 	p.next()
 	return node
+}
+
+func (p *Parser) optionalSemi() {
+	if p.token.Tok != tokens.RPAREN && p.token.Tok != tokens.RBRACE {
+		if p.token.Tok == tokens.SEMICOLON {
+			p.next()
+		} else {
+			panic(p.token.Pos.ToString() + " expected ;")
+		}
+	}
+}
+
+func (p *Parser) toExpr(s Statement, expected string) Expression {
+	if s == nil {
+		return nil
+	}
+	if expr, isExpr := s.(*ExpressionStatement); isExpr {
+		return expr.X
+	}
+	if _, isAssign := s.(*AssignStatement); isAssign {
+		panic(p.token.Pos.ToString() + " expected " + expected + "but found assignment")
+	} else {
+		panic(p.token.Pos.ToString() + " expected " + expected + "but found simple statement")
+	}
+	//return &BadExpression{From: p.token.Pos, To: p.token.Pos}
 }
