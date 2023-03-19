@@ -1,0 +1,63 @@
+.
+└── main
+    ├── body
+    │   ├── declaration
+    │   │   └── var
+    │   │       ├── names
+    │   │       │   └── arr2
+    │   │       ├── type
+    │   │       │   └── array
+    │   │       │       ├── length
+    │   │       │       │   └── INT 5
+    │   │       │       └── type
+    │   │       │           └── int
+    │   │       └── values
+    │   ├── =
+    │   │   ├── arr2
+    │   │   └── composite_literal
+    │   │       ├── type
+    │   │       │   └── array
+    │   │       │       ├── length
+    │   │       │       │   └── INT 5
+    │   │       │       └── type
+    │   │       │           └── int
+    │   │       └── elements
+    │   │           ├── INT 1
+    │   │           ├── INT 2
+    │   │           ├── INT 3
+    │   │           ├── INT 4
+    │   │           └── INT 5
+    │   ├── :=
+    │   │   ├── left
+    │   │   │   └── arr
+    │   │   └── right
+    │   │       └── method
+    │   │           ├── new
+    │   │           └── args
+    │   │               └── array
+    │   │                   ├── length
+    │   │                   │   └── INT 100
+    │   │                   └── type
+    │   │                       └── int
+    │   ├── =
+    │   │   ├── index_expression
+    │   │   │   ├── name
+    │   │   │   │   └── arr
+    │   │   │   └── index
+    │   │   │       └── INT 0
+    │   │   └── INT 2
+    │   └── =
+    │       ├── index_expression
+    │       │   ├── name
+    │       │   │   └── arr2
+    │       │   └── index
+    │       │       └── INT 1
+    │       └── index_expression
+    │           ├── name
+    │           │   └── arr
+    │           └── index
+    │               └── INT 0
+    └── type
+        └── func_type
+            ├── params
+            └── results

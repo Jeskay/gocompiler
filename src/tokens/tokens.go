@@ -227,6 +227,10 @@ func (t TokenType) String() string {
 	return tokens[t]
 }
 
+func (p Position) ToString() string {
+	return fmt.Sprintf("%d:%d", p.Line, p.Column)
+}
+
 var Keywords map[string]TokenType
 
 func InitKeywords() {

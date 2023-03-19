@@ -70,3 +70,7 @@ func TestStructs(t *testing.T) {
 	const path = "structs"
 	runTestFolder(t, path, testAmount)
 }
+
+func TestArrays(t *testing.T) {
+	runTestFolder(t, "arrays", 2)
+}

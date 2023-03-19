@@ -31,6 +31,9 @@ func (p *Parser) next() {
 		p.token = p.tokens[p.current]
 	}
 	p.current++
+	if p.token.Tok == tokens.COMMENT {
+		p.next()
+	}
 }
 
 func (p *Parser) parseLiteral() (node *BasicLiteral) {
@@ -329,6 +332,9 @@ func (p *Parser) parseOperand() (node Expression) {
 		return &FunctionLiteral{Type: typ, Body: body}
 	case tokens.STRUCT:
 		return p.parseStructType()
+	case tokens.LBRACK:
+		p.expect(tokens.LBRACK)
+		return p.parseArrayType()
 	}
 
 	return nil
@@ -547,7 +553,7 @@ func (p *Parser) parseTopLevelDeclaration() (node Node) {
 
 func (p *Parser) expect(tok tokens.TokenType) tokens.Token {
 	if p.token.Tok != tok {
-		panic("expected " + tok.String() + " but found " + p.token.Tok.String())
+		panic(p.token.Pos.ToString() + " expected " + tok.String() + " but found " + p.token.Tok.String())
 	}
 	node := p.token
 	p.next()

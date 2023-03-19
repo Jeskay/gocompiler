@@ -1,0 +1,5 @@
+type (
+	T5 [10]Work               // T5 contains T5 as component of a pointer
+	T6 [10]func() T6          // T6 contains T6 as component of a function type
+	T7 [10]struct{ f []T7 }   // T7 contains T7 as component of a slice in a struct
+)

@@ -6,5 +6,6 @@
     │       └── args
     │           └── STRING Hello world
     └── type
-        ├── params
-        └── results
+        └── func_type
+            ├── params
+            └── results

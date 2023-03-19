@@ -14,26 +14,27 @@
     │       │       └── c
     │       └── true
     └── type
-        ├── params
-        │   ├── field
-        │   │   ├── names
-        │   │   │   ├── a
-        │   │   │   └── b
-        │   │   └── type
-        │   │       └── float
-        │   └── field
-        │       ├── names
-        │       │   └── c
-        │       └── type
-        │           └── int
-        └── results
-            ├── field
-            │   ├── names
-            │   │   └── result
-            │   └── type
-            │       └── float
-            └── field
-                ├── names
-                │   └── ok
-                └── type
-                    └── bool
+        └── func_type
+            ├── params
+            │   ├── field
+            │   │   ├── names
+            │   │   │   ├── a
+            │   │   │   └── b
+            │   │   └── type
+            │   │       └── float
+            │   └── field
+            │       ├── names
+            │       │   └── c
+            │       └── type
+            │           └── int
+            └── results
+                ├── field
+                │   ├── names
+                │   │   └── result
+                │   └── type
+                │       └── float
+                └── field
+                    ├── names
+                    │   └── ok
+                    └── type
+                        └── bool

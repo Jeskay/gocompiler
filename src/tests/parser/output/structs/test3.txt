@@ -23,5 +23,6 @@
     │                   └── value
     │                       └── INT 50
     └── type
-        ├── params
-        └── results
+        └── func_type
+            ├── params
+            └── results

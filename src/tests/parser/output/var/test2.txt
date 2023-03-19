@@ -14,14 +14,16 @@
     │       └── right
     │           └── func
     │               ├── type
-    │               │   ├── params
-    │               │   └── results
-    │               │       └── field
-    │               │           └── type
-    │               │               └── int
+    │               │   └── func_type
+    │               │       ├── params
+    │               │       └── results
+    │               │           └── field
+    │               │               └── type
+    │               │                   └── int
     │               └── body
     │                   └── return
     │                       └── INT 7
     └── type
-        ├── params
-        └── results
+        └── func_type
+            ├── params
+            └── results

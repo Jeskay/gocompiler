@@ -69,5 +69,6 @@
     │               └── method
     │                   └── worker
     └── type
-        ├── params
-        └── results
+        └── func_type
+            ├── params
+            └── results

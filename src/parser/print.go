@@ -50,16 +50,17 @@ func (n *BlockStatement) printNode(tree treePrinter.Tree) {
 }
 
 func (n *FunctionType) printNode(tree treePrinter.Tree) {
+	t := tree.AddBranch("func_type")
 	if n.TypeParams != nil {
-		tParams := tree.AddBranch("type_params")
+		tParams := t.AddBranch("type_params")
 		n.TypeParams.printNode(tParams)
 	}
 	if n.Params != nil {
-		params := tree.AddBranch("params")
+		params := t.AddBranch("params")
 		n.Params.printNode(params)
 	}
 	if n.Results != nil {
-		results := tree.AddBranch("results")
+		results := t.AddBranch("results")
 		n.Results.printNode(results)
 	}
 }
@@ -90,7 +91,9 @@ func (n *ArrayType) printNode(tree treePrinter.Tree) {
 	t := tree.AddBranch("array")
 	length := t.AddBranch("length")
 	typ := t.AddBranch("type")
-	n.Len.printNode(length)
+	if n.Len != nil {
+		n.Len.printNode(length)
+	}
 	n.ElementType.printNode(typ)
 }
 

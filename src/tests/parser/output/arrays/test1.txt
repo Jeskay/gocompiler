@@ -1,0 +1,42 @@
+.
+└── type
+    ├── spec
+    │   ├── name
+    │   │   └── T5
+    │   └── type
+    │       └── array
+    │           ├── length
+    │           │   └── INT 10
+    │           └── type
+    │               └── Work
+    ├── spec
+    │   ├── name
+    │   │   └── T6
+    │   └── type
+    │       └── array
+    │           ├── length
+    │           │   └── INT 10
+    │           └── type
+    │               └── func_type
+    │                   ├── params
+    │                   └── results
+    │                       └── field
+    │                           └── type
+    │                               └── T6
+    └── spec
+        ├── name
+        │   └── T7
+        └── type
+            └── array
+                ├── length
+                │   └── INT 10
+                └── type
+                    └── struct
+                        └── field
+                            ├── names
+                            │   └── f
+                            └── type
+                                └── array
+                                    ├── length
+                                    └── type
+                                        └── T7
