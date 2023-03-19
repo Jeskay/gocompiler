@@ -321,7 +321,12 @@ func (p *Parser) parseOperand() (node Expression) {
 	case tokens.INT, tokens.FLOAT, tokens.STRING, tokens.CHAR:
 		return p.parseLiteral()
 	case tokens.FUNC:
-		return p.parseFunctionType()
+		typ := p.parseFunctionType()
+		if p.token.Tok != tokens.LBRACE {
+			return typ
+		}
+		body := p.parseBlockStatement()
+		return &FunctionLiteral{Type: typ, Body: body}
 	case tokens.STRUCT:
 		return p.parseStructType()
 	}
@@ -349,7 +354,7 @@ func (p *Parser) parseStatement() Statement {
 func (p *Parser) parseSimpleStatement() Statement {
 	expr := p.parseExpressionList()
 	switch {
-	case p.token.Tok >= tokens.ADD_ASSIGN && p.token.Tok < tokens.AND_NOT_ASSIGN:
+	case p.token.Tok == tokens.DEFINE, p.token.Tok >= tokens.ADD_ASSIGN && p.token.Tok < tokens.AND_NOT_ASSIGN:
 		current := p.token
 		p.next()
 		y := p.parseExpressionList()
@@ -435,7 +440,7 @@ func (p *Parser) parseBinaryExpression(expr Expression, prec tokens.TokenType) (
 
 	for {
 		operand := p.token
-		if operand.Tok < prec || operand.Tok > tokens.ELLIPSIS {
+		if operand.Tok < prec || operand.Tok >= tokens.DEFINE {
 			break
 		}
 		p.next()
@@ -464,13 +469,14 @@ func (p *Parser) parseConstSpec() *ValueSpec {
 	var typ Expression
 	var values []Expression
 	if p.token.Tok != tokens.EOF && p.token.Tok != tokens.RPAREN {
-		typ = p.parseType()
+		if p.token.Tok != tokens.ASSIGN {
+			typ = p.parseType()
+		}
 		if p.token.Tok == tokens.ASSIGN {
 			p.next()
 			values = p.parseExpressionList()
 		}
 	}
-	p.expect(tokens.RPAREN)
 	return &ValueSpec{Names: idents, Type: typ, Values: values}
 }
 

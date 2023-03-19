@@ -111,7 +111,7 @@ type (
 		Value tokens.Token
 	}
 
-	FuncLiteral struct {
+	FunctionLiteral struct {
 		Type *FunctionType
 		Body *BlockStatement
 	}
@@ -261,6 +261,7 @@ func (*IndexExpression) exprNode()    {}
 func (*IndexExpressions) exprNode()   {}
 func (*CompositeLiteral) exprNode()   {}
 func (*KeyValueExpression) exprNode() {}
+func (*FunctionLiteral) exprNode()    {}
 
 func (*BlockStatement) stmtNode()       {}
 func (*ReturnStatement) stmtNode()      {}

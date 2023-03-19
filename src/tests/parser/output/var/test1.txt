@@ -1,0 +1,63 @@
+.
+└── var
+    ├── names
+    │   └── i
+    ├── type
+    │   └── int
+    └── values
+.
+└── var
+    ├── names
+    │   ├── U
+    │   ├── V
+    │   └── W
+    ├── type
+    │   └── float64
+    └── values
+.
+└── var
+    ├── names
+    │   └── k
+    ├── type
+    └── values
+        └── INT 0
+.
+└── var
+    ├── names
+    │   ├── x
+    │   └── y
+    ├── type
+    │   └── float32
+    └── values
+        ├── -
+        │   └── INT 1
+        └── -
+            └── INT 2
+.
+└── var
+    ├── names
+    │   └── i
+    ├── type
+    │   └── int
+    ├── values
+    ├── names
+    │   ├── u
+    │   ├── v
+    │   └── s
+    ├── type
+    └── values
+        ├── FLOAT 2
+        ├── FLOAT 3
+        └── STRING bar
+.
+└── var
+    ├── names
+    │   ├── re
+    │   └── im
+    ├── type
+    └── values
+        └── method
+            ├── complexSqrt
+            └── args
+                └── -
+                    └── INT 1

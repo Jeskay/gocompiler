@@ -1,0 +1,50 @@
+.
+└── const
+    ├── names
+    │   └── Pi
+    ├── type
+    │   └── float
+    └── values
+        └── FLOAT 3.1415927
+.
+└── const
+    ├── names
+    │   └── zero
+    ├── type
+    └── values
+        └── FLOAT 0
+.
+└── const
+    ├── names
+    │   └── size
+    ├── type
+    │   └── int
+    ├── values
+    │   └── INT 1024
+    ├── names
+    │   └── eof
+    ├── type
+    └── values
+        └── -
+            └── INT 1
+.
+└── const
+    ├── names
+    │   ├── a
+    │   ├── b
+    │   └── c
+    ├── type
+    └── values
+        ├── INT 3
+        ├── INT 4
+        └── STRING foo
+.
+└── const
+    ├── names
+    │   ├── u
+    │   └── v
+    ├── type
+    │   └── float
+    └── values
+        ├── INT 0
+        └── INT 3

@@ -1,0 +1,27 @@
+.
+└── main
+    ├── body
+    │   ├── :=
+    │   │   ├── left
+    │   │   │   ├── i
+    │   │   │   └── j
+    │   │   └── right
+    │   │       ├── INT 0
+    │   │       └── INT 10
+    │   └── :=
+    │       ├── left
+    │       │   └── f
+    │       └── right
+    │           └── func
+    │               ├── type
+    │               │   ├── params
+    │               │   └── results
+    │               │       └── field
+    │               │           └── type
+    │               │               └── int
+    │               └── body
+    │                   └── return
+    │                       └── INT 7
+    └── type
+        ├── params
+        └── results

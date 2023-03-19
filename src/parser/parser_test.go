@@ -47,28 +47,26 @@ func testPath(path string, input bool) string {
 		return "../tests/parser/output/" + path + "/test"
 	}
 }
-
-func TestFunctions(t *testing.T) {
-	const testAmount = 4
-	const path = "functions"
-	for i := 1; i <= testAmount; i++ {
+func runTestFolder(t *testing.T, path string, amount int) {
+	for i := 1; i <= amount; i++ {
 		input := readInput(testPath(path, true) + fmt.Sprint(i) + ".txt")
 		expected := readInput(testPath(path, false) + fmt.Sprint(i) + ".txt")
 		performTest(t, input, expected)
 	}
 }
 
-func TestVarDeclarations(t *testing.T) {
+func TestFunctions(t *testing.T) {
+	const testAmount = 4
+	const path = "functions"
+	runTestFolder(t, path, testAmount)
+}
 
+func TestVarDeclarations(t *testing.T) {
+	runTestFolder(t, "var", 3)
 }
 
 func TestStructs(t *testing.T) {
 	const testAmount = 3
 	const path = "structs"
-
-	for i := 1; i <= testAmount; i++ {
-		input := readInput(testPath(path, true) + fmt.Sprint(i) + ".txt")
-		expected := readInput(testPath(path, false) + fmt.Sprint(i) + ".txt")
-		performTest(t, input, expected)
-	}
+	runTestFolder(t, path, testAmount)
 }

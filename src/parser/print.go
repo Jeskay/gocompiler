@@ -126,11 +126,12 @@ func (n *TypeSpec) printNode(tree treePrinter.Tree) {
 }
 
 func (n *AssignStatement) printNode(tree treePrinter.Tree) {
-	l := tree.AddBranch("left")
+	t := tree.AddBranch(n.Tok.LexString())
+	l := t.AddBranch("left")
 	for _, exp := range n.Lhs {
 		exp.printNode(l)
 	}
-	r := tree.AddBranch("right")
+	r := t.AddBranch("right")
 	for _, exp := range n.Rhs {
 		exp.printNode(r)
 	}
@@ -238,4 +239,10 @@ func (n *KeyValueExpression) printNode(tree treePrinter.Tree) {
 	t := tree.AddBranch("key_value")
 	n.Key.printNode(t.AddBranch("key"))
 	n.Value.printNode(t.AddBranch("value"))
+}
+
+func (n *FunctionLiteral) printNode(tree treePrinter.Tree) {
+	t := tree.AddBranch("func")
+	n.Type.printNode(t.AddBranch("type"))
+	n.Body.printNode(t.AddBranch("body"))
 }
