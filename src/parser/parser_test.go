@@ -74,3 +74,7 @@ func TestStructs(t *testing.T) {
 func TestArrays(t *testing.T) {
 	runTestFolder(t, "arrays", 2)
 }
+
+func TestIfStatements(t *testing.T) {
+	runTestFolder(t, "if_statements", 2)
+}

@@ -150,7 +150,7 @@ func (n *IfStatement) printNode(tree treePrinter.Tree) {
 	if n.Else != nil {
 		n.Else.printNode(t.AddBranch("else"))
 	}
-	n.Cond.printNode(t)
+	n.Cond.printNode(t.AddBranch("condition"))
 	n.Body.printNode(body)
 }
 

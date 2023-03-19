@@ -1,0 +1,54 @@
+.
+└── main
+    ├── body
+    │   ├── :=
+    │   │   ├── left
+    │   │   │   └── t
+    │   │   └── right
+    │   │       └── method
+    │   │           ├── rand
+    │   │           └── args
+    │   │               ├── INT 1
+    │   │               └── INT 100
+    │   └── if
+    │       ├── body
+    │       │   └── method
+    │       │       ├── selector
+    │       │       │   ├── name
+    │       │       │   │   └── printf
+    │       │       │   └── method
+    │       │       │       └── fmt
+    │       │       └── args
+    │       │           └── STRING better not drink
+    │       ├── else
+    │       │   └── if
+    │       │       ├── body
+    │       │       │   └── method
+    │       │       │       ├── selector
+    │       │       │       │   ├── name
+    │       │       │       │   │   └── printf
+    │       │       │       │   └── method
+    │       │       │       │       └── fmt
+    │       │       │       └── args
+    │       │       │           └── STRING do as you wish
+    │       │       ├── else
+    │       │       │   └── method
+    │       │       │       ├── selector
+    │       │       │       │   ├── name
+    │       │       │       │   │   └── printf
+    │       │       │       │   └── method
+    │       │       │       │       └── fmt
+    │       │       │       └── args
+    │       │       │           └── STRING You are too young!
+    │       │       └── condition
+    │       │           └── >
+    │       │               ├── t
+    │       │               └── INT 18
+    │       └── condition
+    │           └── >
+    │               ├── t
+    │               └── INT 50
+    └── type
+        └── func_type
+            ├── params
+            └── results

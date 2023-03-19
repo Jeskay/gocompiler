@@ -377,6 +377,9 @@ func (p *Parser) parseSimpleStatement() Statement {
 
 func (p *Parser) parseIfStatement() *IfStatement {
 	pos := p.expect(tokens.IF).Pos
+	if p.token.Tok == tokens.LBRACE {
+		panic("missing condition in if statement")
+	}
 	exp := p.parseExpression()
 	body := p.parseBlockStatement()
 	var _else Statement
@@ -387,12 +390,9 @@ func (p *Parser) parseIfStatement() *IfStatement {
 			_else = p.parseIfStatement()
 		case tokens.LBRACE:
 			_else = p.parseBlockStatement()
-			p.expect(tokens.SEMICOLON)
 		default:
 			panic("expected if statement of block")
 		}
-	} else {
-		p.expect(tokens.SEMICOLON)
 	}
 	return &IfStatement{Pos: pos, Cond: exp, Body: body, Else: _else}
 }

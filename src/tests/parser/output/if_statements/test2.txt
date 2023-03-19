@@ -1,0 +1,69 @@
+.
+└── main
+    ├── body
+    │   ├── declaration
+    │   │   └── var
+    │   │       ├── names
+    │   │       │   └── t
+    │   │       ├── type
+    │   │       └── values
+    │   │           └── method
+    │   │               ├── rand
+    │   │               └── args
+    │   │                   ├── INT 1
+    │   │                   └── INT 1000
+    │   ├── if
+    │   │   ├── body
+    │   │   │   └── method
+    │   │   │       ├── selector
+    │   │   │       │   ├── name
+    │   │   │       │   │   └── printf
+    │   │   │       │   └── method
+    │   │   │       │       └── fmt
+    │   │   │       └── args
+    │   │   │           └── STRING grater than 50
+    │   │   └── condition
+    │   │       └── >
+    │   │           ├── t
+    │   │           └── INT 50
+    │   ├── if
+    │   │   ├── body
+    │   │   │   └── method
+    │   │   │       ├── selector
+    │   │   │       │   ├── name
+    │   │   │       │   │   └── printf
+    │   │   │       │   └── method
+    │   │   │       │       └── fmt
+    │   │   │       └── args
+    │   │   │           └── STRING grater than 60
+    │   │   └── condition
+    │   │       └── >
+    │   │           ├── t
+    │   │           └── INT 60
+    │   └── if
+    │       ├── body
+    │       │   └── method
+    │       │       ├── selector
+    │       │       │   ├── name
+    │       │       │   │   └── printf
+    │       │       │   └── method
+    │       │       │       └── fmt
+    │       │       └── args
+    │       │           └── STRING impossible
+    │       ├── else
+    │       │   └── method
+    │       │       ├── selector
+    │       │       │   ├── name
+    │       │       │   │   └── printf
+    │       │       │   └── method
+    │       │       │       └── fmt
+    │       │       └── args
+    │       │           └── STRING valid
+    │       └── condition
+    │           └── >
+    │               ├── t
+    │               └── INT 1000
+    └── type
+        └── func_type
+            ├── params
+            └── results

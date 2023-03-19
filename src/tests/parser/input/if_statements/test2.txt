@@ -1,0 +1,16 @@
+func main() {
+    var t = rand(1, 1000)
+    if t > 50 {
+        fmt.printf("grater than 50")
+    }
+
+    if t > 60 {
+        fmt.printf("grater than 60")
+    }
+
+    if t > 1000 {
+        fmt.printf("impossible")
+    } else {
+        fmt.printf("valid")
+    }
+}

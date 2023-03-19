@@ -1,0 +1,10 @@
+func main() {
+    t := rand(1, 100)
+    if t > 50 {
+        fmt.printf("better not drink")
+    } else if t > 18 {
+        fmt.printf("do as you wish")
+    } else {
+        fmt.printf("You are too young!")
+    }
+}
