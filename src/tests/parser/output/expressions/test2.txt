@@ -1,0 +1,16 @@
+.
+└── calc1
+    ├── body
+    │   └── return
+    │       └── *
+    │           ├── INT 5
+    │           └── /
+    │               ├── INT 9
+    │               └── INT 3
+    └── type
+        └── func_type
+            ├── params
+            └── results
+                └── field
+                    └── type
+                        └── int

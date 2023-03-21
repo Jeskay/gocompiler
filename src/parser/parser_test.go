@@ -82,3 +82,7 @@ func TestIfStatements(t *testing.T) {
 func TestForStatements(t *testing.T) {
 	runTestFolder(t, "for_statements", 5)
 }
+
+func TestEpxressions(t *testing.T) {
+	runTestFolder(t, "expressions", 4)
+}

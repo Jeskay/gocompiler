@@ -1,0 +1,4 @@
+
+func calc2() int {
+    return 1 + 2 * 3 * 5 / -3
+}
