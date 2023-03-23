@@ -19,7 +19,7 @@ func readInput(filename string) string {
 	if err != nil {
 		panic(err)
 	}
-	return string(b)
+	return strings.ReplaceAll(string(b), "\r", "")
 }
 
 func performTest(t *testing.T, input string, expect string) {
