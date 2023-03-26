@@ -2,8 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"gocompiler/src/lexer"
-	"gocompiler/src/tokens"
 	"io"
 	"os"
 	"strings"
@@ -23,16 +21,7 @@ func readInput(filename string) string {
 }
 
 func performTest(t *testing.T, input string, expect string) {
-	lexerInstance := lexer.NewLexer(strings.NewReader(input))
-	var tokenList []tokens.Token
-	for {
-		pos, tok, lex, lit := lexerInstance.Lex()
-		tokenList = append(tokenList, tokens.Token{Pos: pos, Tok: tok, Lex: lex, Lit: lit})
-		if tok == tokens.EOF || tok == tokens.ILLEGAL {
-			break
-		}
-	}
-	parserInstance := NewParser(tokenList)
+	parserInstance := NewParser(strings.NewReader(input))
 	astTree := parserInstance.Parse()
 	result := PrintAST(astTree)
 	if result != expect {

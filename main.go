@@ -45,19 +45,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		lexerInstance := lexer.NewLexer(file)
-		var tokenList []tokens.Token
-		for {
-			pos, tok, lex, lit := lexerInstance.Lex()
-			if tok == tokens.EOF {
-				break
-			}
-			tokenList = append(tokenList, tokens.Token{Pos: pos, Tok: tok, Lex: lex, Lit: lit})
-			if tok == tokens.ILLEGAL {
-				break
-			}
-		}
-		parserInstance := parser.NewParser(tokenList)
+		parserInstance := parser.NewParser(file)
 		astTree := parserInstance.Parse()
 		str := parser.PrintAST(astTree)
 		fmt.Println(str)

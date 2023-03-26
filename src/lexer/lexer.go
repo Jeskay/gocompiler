@@ -24,6 +24,11 @@ func NewLexer(reader io.Reader) *Lexer {
 	}
 }
 
+func (l *Lexer) GetLexem() tokens.Token {
+	pos, tok, lex, lit := l.Lex()
+	return tokens.Token{Pos: pos, Tok: tok, Lex: lex, Lit: lit}
+}
+
 func (l *Lexer) Lex() (tokens.Position, tokens.TokenType, any, string) {
 	for {
 		r, err := l.readNext()

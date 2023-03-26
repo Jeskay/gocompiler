@@ -1,25 +1,27 @@
 package parser
 
 import (
+	"gocompiler/src/lexer"
 	"gocompiler/src/tokens"
+	"io"
 )
 
 type Parser struct {
-	tokens  []tokens.Token
-	current int
-	token   tokens.Token
+	token         tokens.Token
+	lexerInstance *lexer.Lexer
 }
 
-func NewParser(tokens []tokens.Token) *Parser {
-	return &Parser{
-		tokens:  tokens,
-		current: 1,
-		token:   tokens[0],
+func NewParser(reader io.Reader) *Parser {
+	lexer := lexer.NewLexer(reader)
+	parser := &Parser{
+		lexerInstance: lexer,
+		token:         lexer.GetLexem(),
 	}
+	return parser
 }
 
 func (p *Parser) Parse() (nodes []Node) {
-	for p.current < len(p.tokens) {
+	for p.token.Tok != tokens.EOF {
 		node := p.parseTopLevelDeclaration()
 		nodes = append(nodes, node)
 	}
@@ -27,10 +29,7 @@ func (p *Parser) Parse() (nodes []Node) {
 }
 
 func (p *Parser) next() {
-	if p.current < len(p.tokens) {
-		p.token = p.tokens[p.current]
-	}
-	p.current++
+	p.token = p.lexerInstance.GetLexem()
 	if p.token.Tok == tokens.COMMENT {
 		p.next()
 	}
