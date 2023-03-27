@@ -97,7 +97,7 @@ type (
 	Ident struct {
 		Pos  tokens.Position
 		Name string
-		Obj  any
+		Obj  *Object
 	}
 
 	Ellipsis struct {
@@ -197,7 +197,7 @@ type (
 
 	StructType struct {
 		Pos        tokens.Position
-		Fields     []*Field
+		Fields     *FieldList
 		Incomplete bool
 	}
 )

@@ -48,7 +48,7 @@ func (p *Parser) parseLiteral() (node *BasicLiteral) {
 
 func (p *Parser) parseIdent() (node *Ident) {
 	if p.token.Tok == tokens.IDENT {
-		node = &Ident{Pos: p.token.Pos, Name: p.token.Lex.(string), Obj: p.token}
+		node = &Ident{Pos: p.token.Pos, Name: p.token.Lex.(string)}
 		p.next()
 	} else {
 		panic("expected identifier")
@@ -119,14 +119,14 @@ func (p *Parser) parseArrayType() (node *ArrayType) {
 
 func (p *Parser) parseStructType() (node *StructType) {
 	p.expect(tokens.STRUCT)
-	p.expect(tokens.LBRACE)
+	opening := p.expect(tokens.LBRACE).Pos
 	var list []*Field
 	for p.token.Tok == tokens.IDENT || p.token.Tok == tokens.LPAREN {
 		list = append(list, p.parseParamDecl())
 	}
-	p.expect(tokens.RBRACE)
+	closing := p.expect(tokens.RBRACE).Pos
 
-	return &StructType{Pos: p.token.Pos, Fields: list}
+	return &StructType{Pos: p.token.Pos, Fields: &FieldList{List: list, Opening: opening, Closing: closing}}
 }
 
 func (p *Parser) parseParamDecl() *Field {

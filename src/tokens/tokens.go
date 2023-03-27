@@ -22,6 +22,12 @@ type Position struct {
 	Column int
 }
 
+func (p *Position) IsValid() bool {
+	return p.Column != NoPosition.Column && p.Line != NoPosition.Line
+}
+
+var NoPosition = Position{Line: 0, Column: 0}
+
 type TokenType int
 
 const (

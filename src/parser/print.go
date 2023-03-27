@@ -101,9 +101,7 @@ func (n *ArrayType) printNode(tree treePrinter.Tree) {
 
 func (n *StructType) printNode(tree treePrinter.Tree) {
 	t := tree.AddBranch("struct")
-	for _, field := range n.Fields {
-		field.printNode(t)
-	}
+	n.Fields.printNode(t)
 }
 
 func (n *ValueSpec) printNode(tree treePrinter.Tree) {
@@ -254,4 +252,9 @@ func (n *FunctionLiteral) printNode(tree treePrinter.Tree) {
 
 func (n *BadExpression) printNode(tree treePrinter.Tree) {
 	tree.AddNode("bad_expression")
+}
+func (n *ParenExpressions) printNode(tree treePrinter.Tree) {
+	t := tree.AddBranch("selector")
+	n.Selector.printNode(t.AddBranch("name"))
+	n.X.printNode(t.AddBranch("expression"))
 }
