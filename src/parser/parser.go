@@ -462,7 +462,7 @@ func (p *Parser) parseBinaryExpression(expr Expression, prec tokens.TokenType) (
 
 	for {
 		operand := p.token
-		if operand.Tok < prec || operand.Tok >= tokens.DEFINE {
+		if operand.Tok < prec || operand.Tok >= tokens.DEFINE || operand.Tok == tokens.INC || operand.Tok == tokens.DEC {
 			break
 		}
 		p.next()

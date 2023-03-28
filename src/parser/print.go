@@ -181,7 +181,7 @@ func (n *ExpressionStatement) printNode(tree treePrinter.Tree) {
 }
 
 func (n *IncDecStatement) printNode(tree treePrinter.Tree) {
-	t := tree.AddBranch(n.Tok.ToString())
+	t := tree.AddBranch(n.Tok.LexString())
 	n.X.printNode(t)
 }
 
