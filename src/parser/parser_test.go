@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"gocompiler/src/ast"
 	"io"
 	"os"
 	"strings"
@@ -23,7 +24,7 @@ func readInput(filename string) string {
 func performTest(t *testing.T, input string, expect string) {
 	parserInstance := NewParser(strings.NewReader(input))
 	astTree := parserInstance.Parse()
-	result := PrintAST(astTree)
+	result := ast.PrintAST(astTree)
 	if result != expect {
 		t.Errorf("expected %s got %s", expect, result)
 	}

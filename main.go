@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gocompiler/src/ast"
 	lexer "gocompiler/src/lexer"
 	"gocompiler/src/parser"
 	"gocompiler/src/tokens"
@@ -47,10 +48,10 @@ func main() {
 		}
 		parserInstance := parser.NewParser(file)
 		astTree := parserInstance.Parse()
-		result := parser.ResolveFile(astTree, func(pos tokens.Position, msg string) {
+		result := ast.ResolveFile(astTree, func(pos tokens.Position, msg string) {
 			fmt.Println("declaration error: " + msg)
 		})
-		str := parser.PrintAST(astTree)
+		str := ast.PrintAST(astTree)
 		fmt.Println(str)
 		fmt.Println(result)
 	}

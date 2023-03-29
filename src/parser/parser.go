@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"gocompiler/src/ast"
 	"gocompiler/src/lexer"
 	"gocompiler/src/tokens"
 	"io"
@@ -20,7 +21,7 @@ func NewParser(reader io.Reader) *Parser {
 	return parser
 }
 
-func (p *Parser) Parse() (nodes []Node) {
+func (p *Parser) Parse() (nodes []ast.Node) {
 	for p.token.Tok != tokens.EOF {
 		node := p.parseTopLevelDeclaration()
 		nodes = append(nodes, node)
@@ -35,10 +36,10 @@ func (p *Parser) next() {
 	}
 }
 
-func (p *Parser) parseLiteral() (node *BasicLiteral) {
+func (p *Parser) parseLiteral() (node *ast.BasicLiteral) {
 	switch p.token.Tok {
 	case tokens.INT, tokens.FLOAT, tokens.STRING, tokens.CHAR:
-		node = &BasicLiteral{Pos: p.token.Pos, Type: p.token.Tok, Value: p.token}
+		node = &ast.BasicLiteral{Pos: p.token.Pos, Type: p.token.Tok, Value: p.token}
 		p.next()
 	default:
 		panic("expected integer or string literal")
@@ -46,9 +47,9 @@ func (p *Parser) parseLiteral() (node *BasicLiteral) {
 	return
 }
 
-func (p *Parser) parseIdent() (node *Ident) {
+func (p *Parser) parseIdent() (node *ast.Ident) {
 	if p.token.Tok == tokens.IDENT {
-		node = &Ident{Pos: p.token.Pos, Name: p.token.Lex.(string)}
+		node = &ast.Ident{Pos: p.token.Pos, Name: p.token.Lex.(string)}
 		p.next()
 	} else {
 		panic("expected identifier")
@@ -56,7 +57,7 @@ func (p *Parser) parseIdent() (node *Ident) {
 	return
 }
 
-func (p *Parser) parseIdentList() (node []*Ident) {
+func (p *Parser) parseIdentList() (node []*ast.Ident) {
 	node = append(node, p.parseIdent())
 	for p.token.Tok == tokens.COMMA {
 		p.next()
@@ -65,7 +66,7 @@ func (p *Parser) parseIdentList() (node []*Ident) {
 	return
 }
 
-func (p *Parser) parseParamsList() (params []*Field) {
+func (p *Parser) parseParamsList() (params []*ast.Field) {
 	params = append(params, p.parseParamDecl())
 	for p.token.Tok == tokens.COMMA {
 		p.next()
@@ -74,68 +75,68 @@ func (p *Parser) parseParamsList() (params []*Field) {
 	return
 }
 
-func (p *Parser) parseParameters(acceptTypeParams bool) (typeParams, params *FieldList) {
+func (p *Parser) parseParameters(acceptTypeParams bool) (typeParams, params *ast.FieldList) {
 	if acceptTypeParams && p.token.Tok == tokens.LBRACK {
 		opening := p.token.Pos
 		p.next()
 		list := p.parseParamsList()
 		closing := p.expect(tokens.RBRACK).Pos
-		typeParams = &FieldList{Opening: opening, List: list, Closing: closing}
+		typeParams = &ast.FieldList{Opening: opening, List: list, Closing: closing}
 	}
 	opening := p.expect(tokens.LPAREN)
-	var fields []*Field
+	var fields []*ast.Field
 	if p.token.Tok != tokens.RPAREN {
 		fields = p.parseParamsList()
 	}
 	closing := p.expect(tokens.RPAREN)
-	params = &FieldList{Opening: opening.Pos, List: fields, Closing: closing.Pos}
+	params = &ast.FieldList{Opening: opening.Pos, List: fields, Closing: closing.Pos}
 	return
 }
 
-func (p *Parser) parseResults() (node *FieldList) {
+func (p *Parser) parseResults() (node *ast.FieldList) {
 	if p.token.Tok == tokens.LPAREN {
 		_, params := p.parseParameters(false)
 		return params
 	}
 	typ := p.parseType()
-	list := make([]*Field, 1)
-	list[0] = &Field{Type: typ}
-	return &FieldList{List: list}
+	list := make([]*ast.Field, 1)
+	list[0] = &ast.Field{Type: typ}
+	return &ast.FieldList{List: list}
 }
 
-func (p *Parser) parseFunctionType() *FunctionType {
+func (p *Parser) parseFunctionType() *ast.FunctionType {
 	p.expect(tokens.FUNC)
 	typeParams, params := p.parseParameters(true)
 	results := p.parseResults()
-	return &FunctionType{Pos: p.token.Pos, TypeParams: typeParams, Params: params, Results: results}
+	return &ast.FunctionType{Pos: p.token.Pos, TypeParams: typeParams, Params: params, Results: results}
 }
 
-func (p *Parser) parseArrayType() (node *ArrayType) {
+func (p *Parser) parseArrayType() (node *ast.ArrayType) {
 	length := p.parseExpression()
 	p.expect(tokens.RBRACK)
 	typ := p.parseType()
-	return &ArrayType{Len: length, ElementType: typ, Post: p.token.Pos}
+	return &ast.ArrayType{Len: length, ElementType: typ, Post: p.token.Pos}
 }
 
-func (p *Parser) parseStructType() (node *StructType) {
+func (p *Parser) parseStructType() (node *ast.StructType) {
 	p.expect(tokens.STRUCT)
 	opening := p.expect(tokens.LBRACE).Pos
-	var list []*Field
+	var list []*ast.Field
 	for p.token.Tok == tokens.IDENT || p.token.Tok == tokens.LPAREN {
 		list = append(list, p.parseParamDecl())
 	}
 	closing := p.expect(tokens.RBRACE).Pos
 
-	return &StructType{Pos: p.token.Pos, Fields: &FieldList{List: list, Opening: opening, Closing: closing}}
+	return &ast.StructType{Pos: p.token.Pos, Fields: &ast.FieldList{List: list, Opening: opening, Closing: closing}}
 }
 
-func (p *Parser) parseParamDecl() *Field {
+func (p *Parser) parseParamDecl() *ast.Field {
 	params := p.parseIdentList()
 	typ := p.parseType()
-	return &Field{Names: params, Type: typ}
+	return &ast.Field{Names: params, Type: typ}
 }
 
-func (p *Parser) parseType() Expression {
+func (p *Parser) parseType() ast.Expression {
 	switch p.token.Tok {
 	case tokens.IDENT:
 		return p.parseIdent()
@@ -146,7 +147,7 @@ func (p *Parser) parseType() Expression {
 		if p.token.Tok == tokens.RBRACK {
 			p.next()
 			typ := p.parseType()
-			return &ArrayType{Len: nil, Post: p.token.Pos, ElementType: typ}
+			return &ast.ArrayType{Len: nil, Post: p.token.Pos, ElementType: typ}
 		}
 		return p.parseArrayType()
 	case tokens.FUNC:
@@ -156,9 +157,9 @@ func (p *Parser) parseType() Expression {
 	}
 }
 
-func (p *Parser) parseCall(function Expression) *CallExpression {
+func (p *Parser) parseCall(function ast.Expression) *ast.CallExpression {
 	lpos := p.expect(tokens.LPAREN).Pos
-	var list []Expression
+	var list []ast.Expression
 	for p.token.Tok != tokens.RPAREN && p.token.Tok != tokens.EOF {
 		list = append(list, p.parseExpression())
 		if p.token.Tok == tokens.RPAREN && p.token.Tok != tokens.EOF {
@@ -167,27 +168,27 @@ func (p *Parser) parseCall(function Expression) *CallExpression {
 		p.next()
 	}
 	rpos := p.expect(tokens.RPAREN).Pos
-	return &CallExpression{Function: function, LParenPos: lpos, RParenPos: rpos, Arguments: list}
+	return &ast.CallExpression{Function: function, LParenPos: lpos, RParenPos: rpos, Arguments: list}
 }
 
-func (p *Parser) parseValue() Expression {
+func (p *Parser) parseValue() ast.Expression {
 	if p.token.Tok == tokens.LBRACE {
 		return p.parseLiteralValue(nil)
 	}
 	return p.parseExpression()
 }
 
-func (p *Parser) parseElement() Expression {
+func (p *Parser) parseElement() ast.Expression {
 	key := p.parseValue()
 	if p.token.Tok == tokens.COLON {
 		colon := p.token.Pos
 		p.next()
-		key = &KeyValueExpression{Key: key, ColonPos: colon, Value: p.parseValue()}
+		key = &ast.KeyValueExpression{Key: key, ColonPos: colon, Value: p.parseValue()}
 	}
 	return key
 }
 
-func (p *Parser) parseElementList() (list []Expression) {
+func (p *Parser) parseElementList() (list []ast.Expression) {
 	for p.token.Tok != tokens.RBRACE && p.token.Tok != tokens.EOF {
 		list = append(list, p.parseElement())
 		if p.token.Tok == tokens.RBRACE && p.token.Tok != tokens.EOF {
@@ -198,17 +199,17 @@ func (p *Parser) parseElementList() (list []Expression) {
 	return
 }
 
-func (p *Parser) parseLiteralValue(typ Expression) Expression {
+func (p *Parser) parseLiteralValue(typ ast.Expression) ast.Expression {
 	lpos := p.expect(tokens.LBRACE).Pos
-	var elements []Expression
+	var elements []ast.Expression
 	if p.token.Tok != tokens.RBRACE {
 		elements = p.parseElementList()
 	}
 	rpos := p.expect(tokens.RBRACE).Pos
-	return &CompositeLiteral{Type: typ, LbracePos: lpos, RbracePos: rpos, Elements: elements}
+	return &ast.CompositeLiteral{Type: typ, LbracePos: lpos, RbracePos: rpos, Elements: elements}
 }
 
-func (p *Parser) parsePrimaryExpression(expr Expression) (node Expression) {
+func (p *Parser) parsePrimaryExpression(expr ast.Expression) (node ast.Expression) {
 	if expr == nil {
 		expr = p.parseOperand()
 	}
@@ -220,7 +221,7 @@ func (p *Parser) parsePrimaryExpression(expr Expression) (node Expression) {
 			switch p.token.Tok {
 			case tokens.IDENT:
 				name := p.parseIdent()
-				expr = &SelectorExpression{X: expr, Selector: name}
+				expr = &ast.SelectorExpression{X: expr, Selector: name}
 			default:
 				panic("exptected selector or type assertion")
 			}
@@ -230,9 +231,9 @@ func (p *Parser) parsePrimaryExpression(expr Expression) (node Expression) {
 			expr = p.parseIndexOrInstance(expr)
 		case tokens.LBRACE:
 			switch expr.(type) {
-			case *ArrayType, *StructType:
+			case *ast.ArrayType, *ast.StructType:
 				expr = p.parseLiteralValue(expr)
-			case *Ident, *SelectorExpression:
+			case *ast.Ident, *ast.SelectorExpression:
 				expr = p.parseLiteralValue(expr)
 			default:
 				return expr
@@ -243,13 +244,13 @@ func (p *Parser) parsePrimaryExpression(expr Expression) (node Expression) {
 	}
 }
 
-func (p *Parser) parseIndexOrInstance(expr Expression) Expression {
+func (p *Parser) parseIndexOrInstance(expr ast.Expression) ast.Expression {
 	lpos := p.expect(tokens.LBRACK).Pos
 	if p.token.Tok == tokens.RBRACK {
 		panic("empty index, slice or index expressions are not permitted")
 	}
 
-	var args []Expression
+	var args []ast.Expression
 	index := p.parseExpression()
 
 	if p.token.Tok == tokens.COMMA {
@@ -265,18 +266,18 @@ func (p *Parser) parseIndexOrInstance(expr Expression) Expression {
 
 	switch len(args) {
 	case 0:
-		return &IndexExpression{X: expr, LBracketPos: lpos, RBracketPos: rpos, Index: index}
+		return &ast.IndexExpression{X: expr, LBracketPos: lpos, RBracketPos: rpos, Index: index}
 	case 1:
-		return &IndexExpression{X: expr, LBracketPos: lpos, RBracketPos: rpos, Index: args[0]}
+		return &ast.IndexExpression{X: expr, LBracketPos: lpos, RBracketPos: rpos, Index: args[0]}
 	default:
-		return &IndexExpressions{X: expr, Lbrack: lpos, Rbrack: rpos, Indices: args}
+		return &ast.IndexExpressions{X: expr, Lbrack: lpos, Rbrack: rpos, Indices: args}
 	}
 }
 
-func (p *Parser) parseGenericDeclaration(keyword tokens.TokenType) *GenericDeclaration {
+func (p *Parser) parseGenericDeclaration(keyword tokens.TokenType) *ast.GenericDeclaration {
 	pos := p.expect(keyword).Pos
 	var lpos, rpos tokens.Position
-	var list []Spec
+	var list []ast.Spec
 	if p.token.Tok == tokens.LPAREN {
 		lpos = p.token.Pos
 		p.next()
@@ -302,7 +303,7 @@ func (p *Parser) parseGenericDeclaration(keyword tokens.TokenType) *GenericDecla
 		}
 	}
 
-	return &GenericDeclaration{
+	return &ast.GenericDeclaration{
 		Token:     keyword,
 		Pos:       pos,
 		LParenPos: lpos,
@@ -311,7 +312,7 @@ func (p *Parser) parseGenericDeclaration(keyword tokens.TokenType) *GenericDecla
 	}
 }
 
-func (p *Parser) parseOperand() (node Expression) {
+func (p *Parser) parseOperand() (node ast.Expression) {
 	switch p.token.Tok {
 	case tokens.IDENT:
 		return p.parseIdent()
@@ -328,7 +329,7 @@ func (p *Parser) parseOperand() (node Expression) {
 			return typ
 		}
 		body := p.parseBlockStatement()
-		return &FunctionLiteral{Type: typ, Body: body}
+		return &ast.FunctionLiteral{Type: typ, Body: body}
 	case tokens.STRUCT:
 		return p.parseStructType()
 	case tokens.LBRACK:
@@ -339,7 +340,7 @@ func (p *Parser) parseOperand() (node Expression) {
 	return nil
 }
 
-func (p *Parser) parseStatement() Statement {
+func (p *Parser) parseStatement() ast.Statement {
 	switch p.token.Tok {
 	case tokens.IF:
 		return p.parseIfStatement()
@@ -348,7 +349,7 @@ func (p *Parser) parseStatement() Statement {
 	case tokens.RETURN:
 		return p.parseReturnStatement()
 	case tokens.CONST, tokens.VAR, tokens.TYPE:
-		return &DeclarationStatement{Decl: p.parseGenericDeclaration(p.token.Tok)}
+		return &ast.DeclarationStatement{Decl: p.parseGenericDeclaration(p.token.Tok)}
 	case tokens.LBRACE:
 		return p.parseBlockStatement()
 	default:
@@ -356,32 +357,32 @@ func (p *Parser) parseStatement() Statement {
 	}
 }
 
-func (p *Parser) parseSimpleStatement() Statement {
+func (p *Parser) parseSimpleStatement() ast.Statement {
 	expr := p.parseExpressionList()
 	switch {
 	case p.token.Tok == tokens.DEFINE, p.token.Tok >= tokens.ADD_ASSIGN && p.token.Tok < tokens.AND_NOT_ASSIGN:
 		current := p.token
 		p.next()
 		y := p.parseExpressionList()
-		return &AssignStatement{Lhs: expr, TokPos: current.Pos, Tok: current, Rhs: y}
+		return &ast.AssignStatement{Lhs: expr, TokPos: current.Pos, Tok: current, Rhs: y}
 	}
 	switch p.token.Tok {
 	case tokens.INC, tokens.DEC:
-		statement := &IncDecStatement{X: expr[0], Pos: p.token.Pos, Tok: p.token}
+		statement := &ast.IncDecStatement{X: expr[0], Pos: p.token.Pos, Tok: p.token}
 		p.next()
 		return statement
 	}
-	return &ExpressionStatement{X: expr[0]}
+	return &ast.ExpressionStatement{X: expr[0]}
 }
 
-func (p *Parser) parseIfStatement() *IfStatement {
+func (p *Parser) parseIfStatement() *ast.IfStatement {
 	pos := p.expect(tokens.IF).Pos
 	if p.token.Tok == tokens.LBRACE {
 		panic("missing condition in if statement")
 	}
 	exp := p.parseExpression()
 	body := p.parseBlockStatement()
-	var _else Statement
+	var _else ast.Statement
 	if p.token.Tok == tokens.ELSE {
 		p.next()
 		switch p.token.Tok {
@@ -393,12 +394,12 @@ func (p *Parser) parseIfStatement() *IfStatement {
 			panic("expected if statement of block")
 		}
 	}
-	return &IfStatement{Pos: pos, Cond: exp, Body: body, Else: _else}
+	return &ast.IfStatement{Pos: pos, Cond: exp, Body: body, Else: _else}
 }
 
-func (p *Parser) parseForStatement() *ForStatement {
+func (p *Parser) parseForStatement() *ast.ForStatement {
 	pos := p.expect(tokens.FOR).Pos
-	var stmt1, stmt2, stmt3 Statement
+	var stmt1, stmt2, stmt3 ast.Statement
 	if p.token.Tok != tokens.LBRACE {
 		if p.token.Tok != tokens.SEMICOLON {
 			stmt2 = p.parseSimpleStatement()
@@ -417,44 +418,44 @@ func (p *Parser) parseForStatement() *ForStatement {
 		}
 	}
 	body := p.parseBlockStatement()
-	return &ForStatement{Pos: pos, Init: stmt1, Cond: p.toExpr(stmt2, "boolean expression"), Post: stmt3, Body: body}
+	return &ast.ForStatement{Pos: pos, Init: stmt1, Cond: p.toExpr(stmt2, "boolean expression"), Post: stmt3, Body: body}
 }
 
-func (p *Parser) parseReturnStatement() *ReturnStatement {
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	pos := p.expect(tokens.RETURN).Pos
-	var expr []Expression
+	var expr []ast.Expression
 	if p.token.Tok != tokens.SEMICOLON && p.token.Tok != tokens.RBRACE {
 		expr = p.parseExpressionList()
 	}
-	return &ReturnStatement{Return: pos, Results: expr}
+	return &ast.ReturnStatement{Return: pos, Results: expr}
 }
 
-func (p *Parser) parseStatementList() (list []Statement) {
+func (p *Parser) parseStatementList() (list []ast.Statement) {
 	for p.token.Tok != tokens.RBRACE {
 		list = append(list, p.parseStatement())
 	}
 	return
 }
 
-func (p *Parser) parseBlockStatement() *BlockStatement {
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	begin := p.expect(tokens.LBRACE)
 	list := p.parseStatementList()
 	end := p.expect(tokens.RBRACE)
-	return &BlockStatement{LbracePos: begin.Pos, List: list, RbracePos: end.Pos}
+	return &ast.BlockStatement{LbracePos: begin.Pos, List: list, RbracePos: end.Pos}
 }
 
-func (p *Parser) parseUnaryExpression() (node Expression) {
+func (p *Parser) parseUnaryExpression() (node ast.Expression) {
 	switch p.token.Tok {
 	case tokens.ADD, tokens.SUB, tokens.NOT:
 		op := p.token
 		p.next()
-		return &UnaryExpression{Pos: op.Pos, Operator: op.Tok, X: p.parseExpression()}
+		return &ast.UnaryExpression{Pos: op.Pos, Operator: op.Tok, X: p.parseExpression()}
 	default:
 		return p.parsePrimaryExpression(nil)
 	}
 }
 
-func (p *Parser) parseBinaryExpression(expr Expression, prec tokens.TokenType) (node Expression) {
+func (p *Parser) parseBinaryExpression(expr ast.Expression, prec tokens.TokenType) (node ast.Expression) {
 
 	if expr == nil {
 		expr = p.parseUnaryExpression()
@@ -468,16 +469,16 @@ func (p *Parser) parseBinaryExpression(expr Expression, prec tokens.TokenType) (
 		p.next()
 
 		right := p.parseBinaryExpression(nil, operand.Tok+1)
-		expr = &BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: expr, RightX: right}
+		expr = &ast.BinaryExpression{Pos: operand.Pos, Operator: operand.Tok, LeftX: expr, RightX: right}
 	}
 	return expr
 }
 
-func (p *Parser) parseExpression() (node Expression) {
+func (p *Parser) parseExpression() (node ast.Expression) {
 	return p.parseBinaryExpression(nil, tokens.ADD)
 }
 
-func (p *Parser) parseExpressionList() (list []Expression) {
+func (p *Parser) parseExpressionList() (list []ast.Expression) {
 	list = append(list, p.parseExpression())
 	for p.token.Tok == tokens.COMMA {
 		p.next()
@@ -486,10 +487,10 @@ func (p *Parser) parseExpressionList() (list []Expression) {
 	return
 }
 
-func (p *Parser) parseConstSpec() *ValueSpec {
+func (p *Parser) parseConstSpec() *ast.ValueSpec {
 	idents := p.parseIdentList()
-	var typ Expression
-	var values []Expression
+	var typ ast.Expression
+	var values []ast.Expression
 	if p.token.Tok != tokens.EOF && p.token.Tok != tokens.RPAREN {
 		if p.token.Tok != tokens.ASSIGN {
 			typ = p.parseType()
@@ -499,13 +500,13 @@ func (p *Parser) parseConstSpec() *ValueSpec {
 			values = p.parseExpressionList()
 		}
 	}
-	return &ValueSpec{Names: idents, Type: typ, Values: values}
+	return &ast.ValueSpec{Names: idents, Type: typ, Values: values}
 }
 
-func (p *Parser) parseVarSpec() *ValueSpec {
+func (p *Parser) parseVarSpec() *ast.ValueSpec {
 	idents := p.parseIdentList()
-	var typ Expression
-	var values []Expression
+	var typ ast.Expression
+	var values []ast.Expression
 	if p.token.Tok != tokens.ASSIGN {
 		typ = p.parseType()
 	}
@@ -513,23 +514,23 @@ func (p *Parser) parseVarSpec() *ValueSpec {
 		p.next()
 		values = p.parseExpressionList()
 	}
-	return &ValueSpec{Names: idents, Type: typ, Values: values}
+	return &ast.ValueSpec{Names: idents, Type: typ, Values: values}
 }
 
-func (p *Parser) parseFunctionDeclaration() *FunctionDeclaration {
+func (p *Parser) parseFunctionDeclaration() *ast.FunctionDeclaration {
 	pos := p.expect(tokens.FUNC).Pos
 
 	ident := p.parseIdent()
 	typeParams, params := p.parseParameters(false)
 	results := p.parseResults()
-	var body *BlockStatement
+	var body *ast.BlockStatement
 	if p.token.Tok == tokens.LBRACE {
 		body = p.parseBlockStatement()
 	}
 
-	return &FunctionDeclaration{
+	return &ast.FunctionDeclaration{
 		Name: ident,
-		Type: &FunctionType{
+		Type: &ast.FunctionType{
 			Pos:        pos,
 			TypeParams: typeParams,
 			Params:     params,
@@ -539,10 +540,10 @@ func (p *Parser) parseFunctionDeclaration() *FunctionDeclaration {
 	}
 }
 
-func (p *Parser) parseTypeSpec() (node Spec) {
+func (p *Parser) parseTypeSpec() (node ast.Spec) {
 
 	name := p.parseIdent()
-	spec := &TypeSpec{Name: name}
+	spec := &ast.TypeSpec{Name: name}
 
 	if p.token.Tok == tokens.LBRACK {
 		p.next()
@@ -557,7 +558,7 @@ func (p *Parser) parseTypeSpec() (node Spec) {
 	return spec
 }
 
-func (p *Parser) parseTopLevelDeclaration() (node Node) {
+func (p *Parser) parseTopLevelDeclaration() (node ast.Node) {
 	switch p.token.Tok {
 	case tokens.CONST, tokens.VAR, tokens.TYPE:
 		node = p.parseGenericDeclaration(p.token.Tok)
@@ -586,17 +587,17 @@ func (p *Parser) optionalSemi() {
 	}
 }
 
-func (p *Parser) toExpr(s Statement, expected string) Expression {
+func (p *Parser) toExpr(s ast.Statement, expected string) ast.Expression {
 	if s == nil {
 		return nil
 	}
-	if expr, isExpr := s.(*ExpressionStatement); isExpr {
+	if expr, isExpr := s.(*ast.ExpressionStatement); isExpr {
 		return expr.X
 	}
-	if _, isAssign := s.(*AssignStatement); isAssign {
+	if _, isAssign := s.(*ast.AssignStatement); isAssign {
 		panic(p.token.Pos.ToString() + " expected " + expected + "but found assignment")
 	} else {
 		panic(p.token.Pos.ToString() + " expected " + expected + "but found simple statement")
 	}
-	//return &BadExpression{From: p.token.Pos, To: p.token.Pos}
+	//return &ast.BadExpression{From: p.token.Pos, To: p.token.Pos}
 }
